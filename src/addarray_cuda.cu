@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
     cudaFree(d_a); cudaFree(d_b); cudaFree(d_c);
     t.stop();
 
-    t.print_stats(cout);
+    t.output_stats(cout);
     cout << " milliseconds\n ";
 
     // check if the result is the one expected
