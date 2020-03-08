@@ -1,5 +1,5 @@
 set (TEST_SOURCES
-		${CMAKE_CURRENT_SOURCE_DIR}/image_test.u
+		${CMAKE_CURRENT_SOURCE_DIR}/image_test.cu
 )
 
 include (../CMakeList.test.in)
