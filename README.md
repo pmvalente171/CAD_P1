@@ -1,6 +1,6 @@
 # README #
 
-CAD repository for shared memory labs
+CAD repository for CUDA labs
 
 ### How do I get set up? ###
 
