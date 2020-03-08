@@ -1,29 +1,28 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
-
-### What is this repository for? ###
-
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+CAD repository for shared memory labs
 
 ### How do I get set up? ###
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+This is a Cmake project.
 
-### Contribution guidelines ###
+In a IDE with Cmake support simply compile the project and run the GoogleTest tests.
 
-* Writing tests
-* Code review
-* Other guidelines
+If you prefer to use the command line, follow the following steps:
+
+- go to the project's folder
+
+- create a build folder: mkdir build
+
+- cd build
+
+- cmake ..
+
+- make
+
+- run tests: ./tests/cadlabtests_*
+
 
 ### Who do I talk to? ###
 
-* Repo owner or admin
-* Other community or team contact
+herve.paulino@fct.unl.pt
