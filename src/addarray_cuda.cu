@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
     const unique_ptr<vector<int>> b = make_unique<vector<int>>(size, 2);
     unique_ptr<vector<int>> c = make_unique<vector<int>>(size);
 
-    cadlabs::timer<> t;
+    marrow::timer<> t;
     t.start();
     // allocate in the GPU
     int *d_a, *d_b, *d_c;
