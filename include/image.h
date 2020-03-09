@@ -42,7 +42,15 @@ namespace cad {
           */
          unsigned data_size;
 
+        /**
+         * Pointer to data
+         */
         std::unique_ptr<T[]> data;
+
+        /**
+         * Pointer to data on the GPU
+         */
+        T* gpu_data;
 
     public:
         /**
@@ -56,7 +64,8 @@ namespace cad {
                 height(height),
                 n_channels (n_channels),
                 data_size(width * height * n_channels),
-                data(std::make_unique<T[]>(data_size)) {}
+                data(std::make_unique<T[]>(data_size)),
+                gpu_data (nullptr){}
 
         /**
          * Construct image object of a given object file.
@@ -75,6 +84,7 @@ namespace cad {
             n_channels = wbImage_getChannels(inputImage);
             data_size = width * height * n_channels;
             data = std::unique_ptr<T[]>(wbImage_getData(inputImage));
+            gpu_data = nullptr;
         }
 
         /**
@@ -181,6 +191,31 @@ namespace cad {
          */
         const T& operator[] (const int index) const {
             return data[index];
+        }
+
+        ////////////////// GPU support
+
+        /**
+         * Allocate space for the image's data in the GPU
+         */
+        void alloc_gpu() {
+            /* if (!gpu_data)
+                gpu_data = ... TODO
+            */
+        }
+
+        /**
+         * Copy the image's data to the GPU
+         */
+        void copy_to_gpu() {
+            // TODO
+        }
+
+        /**
+        * Copy the image's data from the GPU
+        */
+        void copy_from_gpu() {
+            // TODO
         }
 
     };
