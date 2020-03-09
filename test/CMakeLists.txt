@@ -3,8 +3,7 @@ enable_testing()
 #############
 # Download and unpack googletest at configure time
 #############
-
-set (GOOGLE_TEST_DIR ${PROJECT_SOURCE_DIR}/../googletest)
+set (GOOGLE_TEST_DIR ${PROJECT_SOURCE_DIR}/../googletest_$ENV{USER})
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt.in ${GOOGLE_TEST_DIR}/googletest-download/CMakeLists.txt)
 
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
@@ -32,6 +31,7 @@ add_subdirectory(${GOOGLE_TEST_DIR}/googletest-src
         EXCLUDE_FROM_ALL)
 
 set (GTEST_BOTH_LIBRARIES gtest_main gtest)
+
 
 
 #############

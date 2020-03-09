@@ -9,6 +9,14 @@
 
 namespace cad {
 
+    template <typename T>
+    __global__ void add(const T* a, const T* b, T* c, const unsigned size) {
+        int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+        if (index < size)
+            c[index] = a[index] + b[index];
+    }
+
     /**
      * Pairwise addition of two containers
      * @tparam Stride Stride between accesses to the containers. Default is 1.
@@ -17,12 +25,34 @@ namespace cad {
      * @param a The first operand
      * @param b The second operand
      */
-    template<std::size_t Stride = 1, class Container>
-    void array_add(Container &result, Container &a, Container &b) {
+    template<typename Container>
+    void array_add(Container& result, Container& a, Container& b) {
 
-        for (std::size_t i = 0; i < result.size(); i+=Stride)
-            result[i] = a[i] + b[i];
+        static constexpr auto THREADS_PER_BLOCK = 512;
+        using ValueType = typename Container::value_type;
+
+        ValueType *d_a, *d_b, *d_result;
+        const auto size_in_bytes = result.size() * sizeof(ValueType);
+
+        cudaMalloc((void **)&d_a, size_in_bytes);
+        cudaMalloc((void **)&d_b, size_in_bytes);
+        cudaMalloc((void **)&d_result, size_in_bytes);
+
+        // Copy to the GPU
+        cudaMemcpy(d_a, a.data(), size_in_bytes,  cudaMemcpyHostToDevice);
+        cudaMemcpy(d_b, b.data(), size_in_bytes,  cudaMemcpyHostToDevice);
+
+        // Perform the computation
+        const auto nb = (result.size() + THREADS_PER_BLOCK - 1)/THREADS_PER_BLOCK;
+        add<<<nb, THREADS_PER_BLOCK>>>(d_a, d_b, d_result, result.size());
+
+        // Copy the results back to the host
+        cudaMemcpy(result.data(), d_result, size_in_bytes, cudaMemcpyDeviceToHost);
+
+        cudaFree(d_a); cudaFree(d_b); cudaFree(d_result);
     }
+
+
 
     /**
      * Compute de cumulative distribution function of the values of a given container for the received probability function.

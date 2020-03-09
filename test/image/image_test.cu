@@ -7,7 +7,7 @@
 
 #include <image.h>
 #include <functions.h>
-#include <marrow/timer.h>
+#include <marrow/timer.hpp>
 
 using namespace cad;
 
@@ -15,7 +15,7 @@ static const std::string data_folder = "../../../data/";
 
 TEST(Image, Example) {
 
-    image input (data_folder + "input01.ppm");
+    image<float> input (data_folder + "input01.ppm");
 
     // To a integer representation
     auto img = input.to_integer();
@@ -32,7 +32,7 @@ TEST(Image, Example) {
     auto output = img.to_float();
 
     // Check if the result is correct
-    image expected (data_folder + "output01.ppm");
+    image<float> expected (data_folder + "output01.ppm");
     expect_container_float_eq(output, expected);
 
 }

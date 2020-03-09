@@ -63,7 +63,7 @@ namespace cad {
          * Only enabled for image<float> type.
          * @param filename The name of the file to load.
          */
-        template <typename U = T, std::enable_if_t<std::is_same_v<U, float>>* = nullptr>
+        template <typename U = T, std::enable_if_t<std::is_same<U, float>::value>* = nullptr>
         image(const std::string& filename) {
             wbImage_t inputImage = wbImport(filename.c_str());
 
@@ -90,7 +90,7 @@ namespace cad {
          * Enabled only for image<float>
          * @return The new image
          */
-        template <typename U = T, std::enable_if_t<std::is_same_v<U, float>>* = nullptr>
+        template <typename U = T, std::enable_if<std::is_same<U, float>::value>* = nullptr>
         image<unsigned char> to_integer() {
 
             image<unsigned char> ucharImage (width, height, n_channels);
@@ -104,7 +104,7 @@ namespace cad {
          * Enabled only for image<unsigned char>
          * @return The new image
          */
-        template <typename U = T, std::enable_if_t<std::is_same_v<U, unsigned char>>* = nullptr>
+        template <typename U = T, std::enable_if_t<std::is_same<U, unsigned char>::value>* = nullptr>
         image<float> to_float() {
 
             image<float> t_img (width, height, n_channels);
