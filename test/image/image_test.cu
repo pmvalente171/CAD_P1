@@ -18,7 +18,7 @@ TEST(Image, Example) {
     image<float> input (data_folder + "input01.ppm");
 
     // To a integer representation
-    auto img = input.to_integer();
+    auto img = input.to_integer<>();
     // Change to a grey scale
     auto greyImage = img.to_greyscale();
     // Compute the color histogram

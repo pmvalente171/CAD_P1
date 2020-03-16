@@ -87,6 +87,10 @@ namespace cad {
             gpu_data = nullptr;
         }
 
+        ~image() {
+            if (gpu_data)
+                cudaFree(gpu_data);
+        }
         /**
          * Size of the image in number of bytes
          * @return
