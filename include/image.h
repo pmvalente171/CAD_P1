@@ -87,10 +87,26 @@ namespace cad {
             gpu_data = nullptr;
         }
 
+        /**
+         * Move constructor
+         */
+        image(image<T>&& other) :
+                width(other.width),
+                height(other.height),
+                data(std::move(other.data)),
+                gpu_data(other.gpu_data) {
+
+            other.gpu_data = nullptr;
+        }
+
+        /**
+         * Destructor
+         */
         ~image() {
             if (gpu_data)
                 cudaFree(gpu_data);
         }
+
         /**
          * Size of the image in number of bytes
          * @return
