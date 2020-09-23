@@ -31,6 +31,7 @@ find_package(OpenMP REQUIRED)
 ##################################
 # NBody - Brute force version
 ##################################
+link_libraries("m")
 set (NBODY_BRUTE_FORCE nbody)
 
 add_executable(${NBODY_BRUTE_FORCE} ${NBODY_BASE_SOURCES} nbody_brute_force.c)
