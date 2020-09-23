@@ -5,7 +5,8 @@
 
 #include <stdio.h>
 #include <math.h>
-
+#include <unistd.h>
+#include <stdlib.h>
 
 #ifdef DISPLAY
 #include <X11/Xlib.h>
@@ -14,7 +15,7 @@
 
 #include "ui.h"
 #include "nbody.h"
-
+#include "nbody_tools.h"
 
 FILE* f_out=NULL;
 
@@ -139,4 +140,35 @@ void run_simulation() {
     flush_display();
 #endif
   }
+}
+
+
+
+void init(int argc, char* argv[]) {
+    int c;
+    while ((c = getopt (argc-1, argv+1, "t:u:s:")) != -1)
+        switch (c) {
+            case 't':
+                T_FINAL = atof(optarg);
+                break;
+            case 'u':
+                universe = atoi(optarg);
+                break;
+            case 's':
+                //         universe_seed = atoi(optarg);;
+                break;
+
+            default:
+                fprintf (stderr, "%c option not supported\n", c);
+                usage(argv[0]);
+                exit(1);
+        }
+
+}
+
+void usage(char* prog) {
+    fprintf (stderr, "usage: %s number_particles [-i number_iterations] [-u universe] [-s seed]\n"
+                     "\t-t --> number of end time (default 1.0)\n"
+                     "\t-u --> universe type [0 - line, 1 - disc] (default 0)\n"
+                     "\t-s --> seed for universe creation. Used in disc.", prog);
 }

@@ -32,7 +32,6 @@ void original(int num_particles, particle_t *particles) {
         particle->mass = 1.0 + (num_particles + i) / total_particle;
         particle->node = NULL;
         //insert_particle(particle, root);
-        printf (" x %f y %f\n", particle->x_pos, particle->y_pos);
     }
 }
 
@@ -59,43 +58,45 @@ void sphere(int num_particles, particle_t *particles) {
         particle->mass = 1.0 + (num_particles + i) / num_particles;
         particle->node = NULL;
 
-        printf (" x %f y %f\n", particle->x_pos, particle->y_pos);
     }
 }
 
-static const float RADIUS_OFFSET = 0.05f;
-static const int radius = 50;
-static const float velocityMultiplier = 1.5;
+
 
 void rotating_disc(int num_particles, particle_t *particles) {
+
+    static const float RADIUS_OFFSET = 0.05f;
+    static const float velocityMultiplier = 1.3;
+    static const int radius = 5;
 
     particle_t *particle = &particles[0];
     particle->mass = 1.0;
     particle->x_pos = 0;
     particle->y_pos = 0;
+    particle->x_vel = 1;
 
-    for (int i = 1; i < num_particles; i++) {
+
+
+    for (int i = 0; i < num_particles; i++) {
         particle_t *particle = &particles[i];
 
-        float r = (float) ((rand() * radius)  + RADIUS_OFFSET) / 100000; // + RADIUS_OFFSET to ensure it won't be on the center
-        r = r - (int) r;
+        double r = (float) ((rand() / RAND_MAX * radius)  + RADIUS_OFFSET);
 
         double alpha = rand() * 2 * PI;
-       double x = (float) (cos(alpha) * r);
-        particle->x_pos = x; // - (int) x;
-        double y = (float) (sin(alpha) * r);
-        particle->y_pos = y; // - (int) y;
+
+        particle->x_pos = (float) (cos(alpha) * r);
+        particle->y_pos = (float) (sin(alpha) * r);
 
         particle->mass = 1.0 + (num_particles + i) / num_particles;
 
         // orbital velocity
-        float v0 = (float) sqrt((particles[0].mass + particle->mass) / (r * r * r)) * velocityMultiplier;
+        float v0 = (float) sqrt((1 + particle->mass) / (r * r * r)) * velocityMultiplier;
 
         // rotate by 90°
         particle->x_vel = particle->y_pos * v0;
         particle->y_vel = -particle->x_pos * v0;
 
         particle->node = NULL;
-        printf (" x %f y %f x %f y %f\n", x, y, particle->x_pos, particle->y_pos);
+      //  printf (" x %f y %f x %f y %f\n", x, y, particle->x_pos, particle->y_pos);
     }
 }

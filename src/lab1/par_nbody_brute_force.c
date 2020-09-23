@@ -34,9 +34,6 @@ double sum_speed_sq = 0;
 double max_acc = 0;
 double max_speed = 0;
 
-void init() {
-  /* Nothing to do */
-}
 
 #ifdef DISPLAY
 Display *theDisplay;  /* These three variables are required to open the */
@@ -153,68 +150,40 @@ void run_simulation() {
   }
 }
 
-/*
-  Simulate the movement of nparticles particles.
-*/
-int main(int argc, char**argv)
-{
-  if(argc >= 2) {
-    nparticles = atoi(argv[1]);
-  }
-  if(argc >= 3) {
-    T_FINAL = atof(argv[2]);
-  }
-
-  if (argc == 4) {
-        number_of_threads = atoi(argv[3]);
-  }
 
 
-  init();
 
-  /* Allocate global shared arrays for the particles data set. */
-  particles = malloc(sizeof(particle_t)*nparticles);
-  all_init_particles(nparticles, particles);
+void init(int argc, char* argv[]) {
+    int c;
+    while ((c = getopt (argc-1, argv+1, "t:u:s:n:")) != -1)
+        switch (c) {
+            case 't':
+                T_FINAL = atof(optarg);
+                break;
 
-  /* Initialize thread data structures */
-#ifdef DISPLAY
-  /* Open an X window to display the particles */
-  simple_init (100,100,DISPLAY_SIZE, DISPLAY_SIZE);
-#endif
+            case 'n':
+                number_of_threads = atoi(optarg);
+                break;
 
-  struct timeval t1, t2;
-  gettimeofday(&t1, NULL);
+            case 'u':
+                universe = atoi(optarg);
+                break;
+            case 's':
+                //         universe_seed = atoi(optarg);;
+                break;
 
-  /* Main thread starts simulation ... */
-  run_simulation();
+            default:
+                fprintf (stderr, "%c option not supported\n", c);
+                usage(argv[0]);
+                exit(1);
+        }
 
-  gettimeofday(&t2, NULL);
+}
 
-  double duration = (t2.tv_sec -t1.tv_sec)+((t2.tv_usec-t1.tv_usec)/1e6);
-
-#ifdef DUMP_RESULT
-  FILE* f_out = fopen("particles.log", "w");
-  assert(f_out);
-  print_all_particles(f_out);
-  fclose(f_out);
-#endif
-
-  printf("-----------------------------\n");
-  printf("nparticles: %d\n", nparticles);
-  printf("T_FINAL: %f\n", T_FINAL);
-  printf("-----------------------------\n");
-  printf("Simulation took %lf s to complete\n", duration);
-
-#ifdef DISPLAY
-  clear_display();
-  draw_all_particles();
-  flush_display();
-
-  printf("Hit return to close the window.");
-
-  getchar();
-  /* Close the X window used to display the particles */
-  XCloseDisplay(theDisplay);
-#endif
-  return 0;
+void usage(char* prog) {
+    fprintf (stderr, "usage: %s number_particles [-i number_iterations] [-u universe] [-s seed]\n"
+                     "\t-t --> number of end time (default 1.0)\n"
+                     "\t-n --> number of threads (default number of hardware threads)\n"
+                     "\t-u --> universe type [0 - line, 1 - disc] (default 0)\n"
+                     "\t-s --> seed for universe creation. Used in disc.", prog);
 }

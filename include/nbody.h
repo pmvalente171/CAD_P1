@@ -58,5 +58,7 @@ extern int nparticles;		/* number of particles to simulate */
 
 void draw_all_particles();
 void run_simulation();
+void init(int argc, char* argv[]);
+void usage(char* prog);
 
 #endif

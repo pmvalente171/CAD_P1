@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+
 #include <sys/time.h>
 
 #ifdef DISPLAY
@@ -16,16 +16,8 @@ extern float T_FINAL;     /* simulation end time */
 extern particle_t*particles;
 
 
-void init() {
-    /* Nothing to do */
-}
 
-void usage(char* prog) {
-    fprintf (stderr, "usage: %s number_particles [-i number_iterations] [-u universe] [-s seed]\n"
-                     "\t-t --> number of end time (default 1.0)\n"
-                     "\t-u --> universe type [0 - line, 1 - disc] (default 0)\n"
-                     "\t-s --> seed for universe creation. Used in disc.", prog);
-}
+
 
 /*
   Simulate the movement of nparticles particles.
@@ -39,26 +31,7 @@ int main(int argc, char**argv)
 
     nparticles = atoi(argv[1]);
 
-    int c;
-    while ((c = getopt (argc-1, argv+1, "t:u:s:")) != -1)
-        switch (c) {
-            case 't':
-                T_FINAL = atof(optarg);
-                break;
-            case 'u':
-                universe = atoi(optarg);
-                break;
-            case 's':
-                //         universe_seed = atoi(optarg);;
-                break;
-
-            default:
-                fprintf (stderr, "%c option not supported\n", c);
-                usage(argv[0]);
-                exit(1);
-        }
-
-    init();
+    init(argc, argv);
 
     /* Allocate global shared arrays for the particles data set. */
     particles = malloc(sizeof(particle_t)*nparticles);
