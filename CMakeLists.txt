@@ -10,8 +10,8 @@ set(CMAKE_C_STANDARD 11)
 set (LINE_UNIVERSE 0)
 set (DISC_UNIVERSE 1)
 
-set (DISPLAY true)
-set (DUMP_RESULT false)
+set (DISPLAY FALSE)
+set (DUMP_RESULT FALSE)
 
 #######################
 # Find packages
@@ -19,7 +19,11 @@ set (DUMP_RESULT false)
 
 #### X11
 
-find_package(X11)
+
+if (${DISPLAY})
+
+find_package(X11 REQUIRED)
+
 if (X11_FOUND)
     include_directories(${X11_INCLUDE_DIR})
     link_libraries(${X11_LIBRARIES})
@@ -27,6 +31,7 @@ else()
     message ("X11 not found - no graphical display support")
 endif()
 
+endif()
 
 include_directories(include)
 add_subdirectory(src)

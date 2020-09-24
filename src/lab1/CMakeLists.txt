@@ -36,7 +36,7 @@ set (NBODY_BRUTE_FORCE nbody)
 
 add_executable(${NBODY_BRUTE_FORCE} ${NBODY_BASE_SOURCES} nbody_brute_force.c)
 
-if (${DISPLAY} AND ${X11_FOUND})
+if (${DISPLAY})
     message ("-- Nbody: display option activated")
     target_compile_definitions(${NBODY_BRUTE_FORCE} PRIVATE "-DDISPLAY")
 endif()
@@ -59,7 +59,7 @@ else()
     target_link_libraries(${PARALLEL_NBODY_BRUTE_FORCE} OpenMP::OpenMP_C)
 endif()
 
-if (${DISPLAY} AND ${X11_FOUND})
+if (${DISPLAY})
     target_compile_definitions(${PARALLEL_NBODY_BRUTE_FORCE} PRIVATE "-DDISPLAY")
 endif()
 
