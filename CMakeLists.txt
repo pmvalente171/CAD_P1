@@ -7,10 +7,6 @@ set(CMAKE_C_STANDARD 11)
 # NBody setup
 #######################
 
-set (LINE_UNIVERSE 0)
-set (SPHERE_UNIVERSE 1)
-set (DISC_UNIVERSE 2)
-
 set (DISPLAY FALSE)
 set (DUMP_RESULT FALSE)
 

@@ -61,7 +61,7 @@ set (PARALLEL_NBODY_ALL_PAIRS par_nbody)
 if (${DISPLAY})
     set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES} par_nbody_all_pairs.c)
 else()
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES}  nbody_all_pairs.c)
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES}  par_nbody_all_pairs.c)
 endif()
 
 add_executable(${PARALLEL_NBODY_ALL_PAIRS} ${NBODY_SOURCES})

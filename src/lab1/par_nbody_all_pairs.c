@@ -89,6 +89,7 @@ void all_move_particles(double step)
 {
   /* First calculate force for particles. */
   int i;
+
 #pragma omp parallel for num_threads(number_of_threads)
   for(i=0; i<nparticles; i++) {
 
