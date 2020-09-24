@@ -4,29 +4,34 @@
 **/
 
 #include <stdio.h>
-#include <math.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <pthread.h>
+#include <math.h>
+#include <sys/time.h>
+#include <assert.h>
+#include <unistd.h>
 
 #ifdef DISPLAY
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#include "ui.h"
 #endif
 
-#include "ui.h"
+#include<omp.h>
+
+
 #include "nbody.h"
 #include "nbody_tools.h"
+
+int number_of_threads;
 
 FILE* f_out=NULL;
 
 int nparticles=10;      /* number of particles */
-float T_FINAL = 1.0;     /* simulation end time */
+float T_FINAL=1.0;     /* simulation end time */
 particle_t*particles;
 
 double sum_speed_sq = 0;
 double max_acc = 0;
 double max_speed = 0;
-
 
 
 #ifdef DISPLAY
@@ -84,7 +89,9 @@ void all_move_particles(double step)
 {
   /* First calculate force for particles. */
   int i;
+#pragma omp parallel for num_threads(number_of_threads)
   for(i=0; i<nparticles; i++) {
+
     int j;
     particles[i].x_force = 0;
     particles[i].y_force = 0;
@@ -103,12 +110,14 @@ void all_move_particles(double step)
 
 /* display all the particles */
 void draw_all_particles() {
+#ifdef DISPLAY
   int i;
   for(i=0; i<nparticles; i++) {
     int x = POS_TO_SCREEN(particles[i].x_pos);
     int y = POS_TO_SCREEN(particles[i].y_pos);
     draw_point (x,y);
   }
+#endif
 }
 
 void print_all_particles(FILE* f) {
@@ -144,13 +153,19 @@ void run_simulation() {
 
 
 
+
 void init(int argc, char* argv[]) {
     int c;
-    while ((c = getopt (argc-1, argv+1, "t:u:s:")) != -1)
+    while ((c = getopt (argc-1, argv+1, "t:u:s:n:")) != -1)
         switch (c) {
             case 't':
                 T_FINAL = atof(optarg);
                 break;
+
+            case 'n':
+                number_of_threads = atoi(optarg);
+                break;
+
             case 'u':
                 universe = atoi(optarg);
                 break;
@@ -169,6 +184,7 @@ void init(int argc, char* argv[]) {
 void usage(char* prog) {
     fprintf (stderr, "usage: %s number_particles [-i number_iterations] [-u universe] [-s seed]\n"
                      "\t-t --> number of end time (default 1.0)\n"
+                     "\t-n --> number of threads (default number of hardware threads)\n"
                      "\t-u --> universe type [0 - line, 1 - disc] (default 0)\n"
                      "\t-s --> seed for universe creation. Used in disc.", prog);
 }

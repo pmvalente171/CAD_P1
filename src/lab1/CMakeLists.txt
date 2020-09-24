@@ -4,8 +4,6 @@
 set (NBODY_BASE_SOURCES
         nbody_alloc.c
         nbody_tools.c
-        ui.c
-        xstuff.c
         universe_generation.c
         main.c)
 
@@ -29,42 +27,42 @@ endif()
 find_package(OpenMP REQUIRED)
 
 ##################################
-# NBody - Brute force version
+# NBody - All pairs version
 ##################################
 link_libraries("m")
-set (NBODY_BRUTE_FORCE nbody)
+set (NBODY_ALL_PAIRS nbody)
 
-add_executable(${NBODY_BRUTE_FORCE} ${NBODY_BASE_SOURCES} nbody_brute_force.c)
+add_executable(${NBODY_ALL_PAIRS} ${NBODY_BASE_SOURCES} nbody_all_pairs.c)
 
 if (${DISPLAY})
     message ("-- Nbody: display option activated")
-    target_compile_definitions(${NBODY_BRUTE_FORCE} PRIVATE "-DDISPLAY")
+    target_compile_definitions(${NBODY_ALL_PAIRS} PRIVATE "-DDISPLAY")
 endif()
 
 if (${DUMP_RESULT})
     message ("-- Nbody: dump result")
-    target_compile_definitions(${NBODY_BRUTE_FORCE} PRIVATE "-DDUMP_RESULT")
+    target_compile_definitions(${NBODY_ALL_PAIRS} PRIVATE "-DDUMP_RESULT")
 endif()
 
 ##################################
-# NBody - Parallel Brute force version
+# NBody - Parallel All pairs version
 ##################################
-set (PARALLEL_NBODY_BRUTE_FORCE par_nbody)
+set (PARALLEL_NBODY_ALL_PAIRS par_nbody)
 
-add_executable(${PARALLEL_NBODY_BRUTE_FORCE} ${NBODY_BASE_SOURCES} par_nbody_brute_force.c)
+add_executable(${PARALLEL_NBODY_ALL_PAIRS} ${NBODY_BASE_SOURCES} par_nbody_all_pairs.c)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    target_link_libraries(${PARALLEL_NBODY_BRUTE_FORCE} /usr/local/opt/llvm/lib/libomp.dylib)
-    target_compile_options(${PARALLEL_NBODY_BRUTE_FORCE} PRIVATE  ${OpenMP_C_FLAGS})
+    target_link_libraries(${PARALLEL_NBODY_ALL_PAIRS} /usr/local/opt/llvm/lib/libomp.dylib)
+    target_compile_options(${PARALLEL_NBODY_ALL_PAIRS} PRIVATE  ${OpenMP_C_FLAGS})
 else()
-    target_link_libraries(${PARALLEL_NBODY_BRUTE_FORCE} OpenMP::OpenMP_C)
+    target_link_libraries(${PARALLEL_NBODY_ALL_PAIRS} OpenMP::OpenMP_C)
 endif()
 
 if (${DISPLAY})
-    target_compile_definitions(${PARALLEL_NBODY_BRUTE_FORCE} PRIVATE "-DDISPLAY")
+    target_compile_definitions(${PARALLEL_NBODY_ALL_PAIRS} PRIVATE "-DDISPLAY")
 endif()
 
 if (${DUMP_RESULT})
-    target_compile_definitions(${PARALLEL_NBODY_BRUTE_FORCE} PRIVATE "-DDUMP_RESULT")
+    target_compile_definitions(${PARALLEL_NBODY_ALL_PAIRS} PRIVATE "-DDUMP_RESULT")
 endif()
 
 

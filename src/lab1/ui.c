@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "xstuff.h"
+
 #include "ui.h"
 
 void simple_init(int x, int y, unsigned width, unsigned height)

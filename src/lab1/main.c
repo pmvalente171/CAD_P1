@@ -3,14 +3,14 @@
 
 #include <sys/time.h>
 
-#ifdef DISPLAY
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#endif
 
 #include "nbody.h"
 #include "nbody_tools.h"
+
+
+#ifdef DISPLAY
 #include "ui.h"
+#endif
 
 extern float T_FINAL;     /* simulation end time */
 extern particle_t*particles;

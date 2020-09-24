@@ -3,7 +3,9 @@
 #include <string.h>
 #include <assert.h>
 
+#ifdef DISPLAY
 #include "ui.h"
+#endif
 #include "nbody.h"
 #include "nbody_tools.h"
 #include "nbody_alloc.h"
