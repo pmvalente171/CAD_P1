@@ -169,8 +169,8 @@ void init(int argc, char* argv[]) {
 }
 
 void usage(char* prog) {
-    fprintf (stderr, "usage: %s number_particles [-i number_iterations] [-u universe] [-s seed]\n"
+    fprintf (stderr, "usage: %s number_particles [-t duration time] [-u universe] [-s seed]\n"
                      "\t-t --> number of end time (default 1.0)\n"
-                     "\t-u --> universe type [0 - line, 1 - disc] (default 0)\n"
+                     "\t-u --> universe type [0 - line, 1 - sphere, 2 - rotating disc] (default 0)\n"
                      "\t-s --> seed for universe creation. Used in disc.", prog);
 }
