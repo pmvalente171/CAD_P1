@@ -1,15 +1,16 @@
 #ifndef NBODY_H
 #define NBODY_H
 
+#include <stdio.h>
 
-struct node;
-struct particle;
+enum class universe_t;
+
 
 /*
   This structure holds information for a single particle,
   including position, velocity, and mass.
 */
-typedef struct particle{
+typedef struct particle {
   double x_pos, y_pos;		/* position of the particle */
   double x_vel, y_vel;		/* velocity of the particle */
   double x_force, y_force;	/* gravitational forces that apply against this particle */
@@ -33,7 +34,6 @@ typedef struct node {
 } node_t;
 
 
-extern int nparticles;		/* number of particles to simulate */
 
 /* used for debugging the display of the Barnes-Hut application */
 #define DRAW_BOXES 1
@@ -56,9 +56,37 @@ extern int nparticles;		/* number of particles to simulate */
 #define MAX(X,Y) ((X) > (Y) ? (X) : (Y))  /* utility function */
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))  /* utility function */
 
-void draw_all_particles();
-void run_simulation();
-void init(int argc, char* argv[]);
-void usage(char* prog);
+
+#include "nbody_universe.h"
+
+class nbody {
+
+public:
+    nbody(int number_particles, float t_final, universe_t universe);
+
+    virtual ~nbody();
+
+    void run_simulation();
+
+    void print_all_particles(FILE* f);
+
+
+    const int number_particles;      /* number of particles */
+    const float T_FINAL;     /* simulation end time */
+    const universe_t universe;
+
+
+protected:
+
+    virtual void all_move_particles(double step);
+
+    void draw_all_particles();
+    void compute_force(particle_t*p, double x_pos, double y_pos, double mass);
+    void move_particle(particle_t*p, double step);
+    void all_init_particles();
+
+    particle_t* particles;
+
+};
 
 #endif

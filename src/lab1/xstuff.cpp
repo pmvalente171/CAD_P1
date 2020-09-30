@@ -12,8 +12,8 @@
 
 typedef struct APP_PARAMS
 {
-  char *name;
-  char **p_value_string;
+  const char *name;
+  const char **p_value_string;
 } APP_PARAMS;
 
 typedef struct XWIN 
@@ -25,7 +25,7 @@ typedef struct XWIN
 } XWIN;
 
 /* Default parameter values */
-char *theBGcolor = DEFAULT_BGCOLOR,
+const char *theBGcolor = DEFAULT_BGCOLOR,
   *theFGcolor = DEFAULT_FGCOLOR,
   *theFont = DEFAULT_FONT,
   *theGeom_rsrc = NULL,
@@ -61,7 +61,7 @@ int AppDone = 0;
 XEvent theEvent;
 XFontStruct *theFontStruct;
 unsigned long theBGpix, theFGpix;
-char *theAppName = " ";
+const char *theAppName = " ";
 Window theMain;
 XWindowAttributes MainXWA;
 XContext xwin_context;   
@@ -245,6 +245,6 @@ void xusage(void){
 
 void xwin_init(void)
 {
-  xwin_context = XUniqueContext();
+//  xwin_context = XUniqueContext();
 }
 

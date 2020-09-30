@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
-project(cadlabs-gpu LANGUAGES C)
+project(cadlabs-gpu LANGUAGES C CXX)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 #######################
 # NBody setup
 #######################
 
-set (DISPLAY FALSE)
+set (DISPLAY TRUE)
 set (DUMP_RESULT FALSE)
 
 #######################

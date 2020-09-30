@@ -5,7 +5,6 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <unistd.h>
 #include <stdlib.h>
 
 #ifdef DISPLAY
@@ -18,9 +17,8 @@
 
 FILE* f_out=NULL;
 
-int nparticles=10;      /* number of particles */
-float T_FINAL = 1.0;     /* simulation end time */
-particle_t*particles;
+
+
 
 double sum_speed_sq = 0;
 double max_acc = 0;
@@ -28,16 +26,38 @@ double max_speed = 0;
 
 
 
+nbody::nbody(int number_particles, float t_final, universe_t universe) :
+        number_particles (number_particles),
+        T_FINAL (t_final),
+        universe (universe),
+        particles (static_cast<particle_t *>(malloc(sizeof(particle_t) * number_particles)))  {
+
 #ifdef DISPLAY
-Display *theDisplay;  /* These three variables are required to open the */
-GC theGC;             /* particle plotting window.  They are externally */
-Window theMain;       /* declared in ui.h but are also required here.   */
+    /* Open an X window to display the particles */
+    simple_init (100,100, DISPLAY_SIZE, DISPLAY_SIZE);
 #endif
+
+    all_init_particles();
+}
+
+nbody::~nbody() {
+#ifdef DISPLAY
+    clear_display();
+    draw_all_particles();
+    flush_display();
+
+    printf("Hit return to close the window.");
+
+    getchar();
+    /* Close the X window used to display the particles */
+    XCloseDisplay(theDisplay);
+#endif
+}
 
 /* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
  * applies to particle p
  */
-void compute_force(particle_t*p, double x_pos, double y_pos, double mass) {
+void nbody::compute_force(particle_t*p, double x_pos, double y_pos, double mass) {
   double x_sep, y_sep, dist_sq, grav_base;
 
   x_sep = x_pos - p->x_pos;
@@ -52,7 +72,7 @@ void compute_force(particle_t*p, double x_pos, double y_pos, double mass) {
 }
 
 /* compute the new position/velocity */
-void move_particle(particle_t*p, double step) {
+void nbody::move_particle(particle_t*p, double step) {
 
   p->x_pos += (p->x_vel)*step;
   p->y_pos += (p->y_vel)*step;
@@ -79,15 +99,15 @@ void move_particle(particle_t*p, double step) {
   Update positions, velocity, and acceleration.
   Return local computations.
 */
-void all_move_particles(double step)
+void nbody::all_move_particles(double step)
 {
   /* First calculate force for particles. */
   int i;
-  for(i=0; i<nparticles; i++) {
+  for(i=0; i<number_particles; i++) {
     int j;
     particles[i].x_force = 0;
     particles[i].y_force = 0;
-    for(j=0; j<nparticles; j++) {
+    for(j=0; j<number_particles; j++) {
       particle_t*p = &particles[j];
       /* compute the force of particle j on particle i */
       compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
@@ -95,17 +115,17 @@ void all_move_particles(double step)
   }
 
   /* then move all particles and return statistics */
-  for(i=0; i<nparticles; i++) {
+  for(i=0; i<number_particles; i++) {
     move_particle(&particles[i], step);
   }
 }
 
 
 /* display all the particles */
-void draw_all_particles() {
+void nbody::draw_all_particles() {
 #ifdef DISPLAY
   int i;
-  for(i=0; i<nparticles; i++) {
+  for(i=0; i<number_particles; i++) {
     int x = POS_TO_SCREEN(particles[i].x_pos);
     int y = POS_TO_SCREEN(particles[i].y_pos);
     draw_point (x,y);
@@ -113,17 +133,36 @@ void draw_all_particles() {
 #endif
 }
 
-void print_all_particles(FILE* f) {
+/*
+  Place particles in their initial positions.
+*/
+
+
+void nbody::all_init_particles() {
+
+    if (universe == universe_t::ORIGINAL) {
+        printf("Universe: original\n");
+        original(number_particles, particles);
+    } else if (universe == universe_t::DISC) {
+        printf("Universe: disc\n");
+        rotating_disc(number_particles, particles);
+    } else if (universe == universe_t::SPHERE) {
+        printf("Universe: sphere\n");
+        sphere(number_particles, particles);
+    }
+}
+
+void nbody::print_all_particles(FILE* f) {
   int i;
-  for(i=0; i<nparticles; i++) {
+  for(i=0; i<number_particles; i++) {
     particle_t*p = &particles[i];
     fprintf(f, "particle={pos=(%f,%f), vel=(%f,%f)}\n", p->x_pos, p->y_pos, p->x_vel, p->y_vel);
   }
 }
 
-void run_simulation() {
+void nbody::run_simulation() {
   double t = 0.0, dt = 0.01;
-  while (t < T_FINAL && nparticles>0) {
+  while (t < T_FINAL && number_particles>0) {
     /* Update time. */
     t += dt;
     /* Move particles with the current and compute rms velocity. */
@@ -145,32 +184,3 @@ void run_simulation() {
 }
 
 
-
-void init(int argc, char* argv[]) {
-    int c;
-    while ((c = getopt (argc-1, argv+1, "t:u:s:")) != -1)
-        switch (c) {
-            case 't':
-                T_FINAL = atof(optarg);
-                break;
-            case 'u':
-                universe = atoi(optarg);
-                break;
-            case 's':
-                //         universe_seed = atoi(optarg);;
-                break;
-
-            default:
-                fprintf (stderr, "%c option not supported\n", c);
-                usage(argv[0]);
-                exit(1);
-        }
-
-}
-
-void usage(char* prog) {
-    fprintf (stderr, "usage: %s number_particles [-t duration time] [-u universe] [-s seed]\n"
-                     "\t-t --> number of end time (default 1.0)\n"
-                     "\t-u --> universe type [0 - line, 1 - sphere, 2 - rotating disc] (default 0)\n"
-                     "\t-s --> seed for universe creation. Used in disc.", prog);
-}

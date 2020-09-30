@@ -215,24 +215,7 @@ void insert_particle(particle_t* particle, node_t*node) {
   }
 }
 
-/*
-  Place particles in their initial positions.
-*/
 
-
-void all_init_particles(int num_particles, particle_t *particles) {
-
-    if (universe == ORIGINAL) {
-        printf("Universe: original\n");
-        original(num_particles, particles);
-    } else if (universe == DISC) {
-        printf("Universe: disc\n");
-        rotating_disc(num_particles, particles);
-    } else if (universe == SPHERE) {
-        printf("Universe: sphere\n");
-        sphere(num_particles, particles);
-    }
-}
 
 
 
@@ -245,8 +228,7 @@ void init_alloc(int nb_blocks) {
 
 /* allocate a block of 4 nodes */
 node_t* alloc_node() {
-  node_t*ret = mem_alloc(&mem_node);
-  return ret;
+    return static_cast<node *>(mem_alloc(&mem_node));
 }
 
 void free_root(node_t*root) {

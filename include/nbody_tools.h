@@ -20,10 +20,6 @@ int get_quadrant(particle_t* particle, node_t*node);
 /* inserts a particle in a node (or one of its children)  */
 void insert_particle(particle_t* particle, node_t*node);
 
-/*
-  Place particles in their initial positions.
-*/
-void all_init_particles(int num_particles, particle_t*particles);
 
 void init_alloc(int nb_blocks);
 

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-universe_t universe = ORIGINAL;
+universe_t universe = universe_t::ORIGINAL;
 
 #define PI 3.14159
 
@@ -23,7 +23,7 @@ void original(int num_particles, particle_t *particles) {
         particle->x_vel = particle->y_pos;
         particle->y_vel = particle->x_pos;
 #else
-        particle->x_pos = i * 2.0 / nparticles - 1.0;
+        particle->x_pos = i * 2.0 / num_particles - 1.0;
         particle->y_pos = 0.0;
         particle->x_vel = 0.0;
         particle->y_vel = particle->x_pos;
