@@ -51,9 +51,9 @@ add_executable(${PARALLEL_NBODY_ALL_PAIRS} ${NBODY_SOURCES})
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
     target_link_libraries(${PARALLEL_NBODY_ALL_PAIRS} /usr/local/opt/llvm/lib/libomp.dylib)
-    target_compile_options(${PARALLEL_NBODY_ALL_PAIRS} PRIVATE  ${OpenMP_C_FLAGS})
+    target_compile_options(${PARALLEL_NBODY_ALL_PAIRS} PRIVATE  ${OpenMP_CXX_FLAGS})
 else()
-    target_link_libraries(${PARALLEL_NBODY_ALL_PAIRS} OpenMP::OpenMP_C)
+    target_link_libraries(${PARALLEL_NBODY_ALL_PAIRS} OpenMP::OpenMP_CXX)
 endif()
 
 if (${DISPLAY})

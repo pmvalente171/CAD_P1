@@ -102,24 +102,33 @@ namespace cadlabs {
   Update positions, velocity, and acceleration.
   Return local computations.
 */
-    void nbody::all_move_particles(double step) {
+
+    void nbody::calculate_forces()  {
         /* First calculate force for particles. */
-        int i;
-        for (i = 0; i < number_particles; i++) {
-            int j;
+
+        for (int i = 0; i < number_particles; i++) {
+
             particles[i].x_force = 0;
             particles[i].y_force = 0;
-            for (j = 0; j < number_particles; j++) {
+            for (int j = 0; j < number_particles; j++) {
                 particle_t *p = &particles[j];
                 /* compute the force of particle j on particle i */
                 compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
             }
         }
+    }
+
+    void nbody::move_all_particles(double step) {
 
         /* then move all particles and return statistics */
-        for (i = 0; i < number_particles; i++) {
+        for (int i = 0; i < number_particles; i++) {
             move_particle(&particles[i], step);
         }
+    }
+
+    void nbody::all_move_particles(double step) {
+        calculate_forces();
+        move_all_particles(step);
     }
 
 

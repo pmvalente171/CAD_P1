@@ -21,7 +21,7 @@ namespace cadlabs {
 
 
     protected:
-        virtual void all_move_particles(double step);
+        void calculate_forces();
 
         const unsigned number_of_threads;
     };

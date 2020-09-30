@@ -116,7 +116,7 @@ namespace cadlabs {
 
     protected:
 
-        virtual void all_move_particles(double step);
+        void all_move_particles(double step);
 
         void draw_all_particles();
 
@@ -126,6 +126,13 @@ namespace cadlabs {
 
         void all_init_particles();
 
+        virtual void move_all_particles(double step);
+
+        virtual void calculate_forces();
+
+        /**
+         * The array of particles
+         */
         particle_t *particles;
 
     };
