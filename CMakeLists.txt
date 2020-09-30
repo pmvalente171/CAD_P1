@@ -8,8 +8,8 @@ set(CMAKE_CXX_STANDARD 14)
 # NBody setup
 #######################
 
-set (DISPLAY TRUE)
-set (DUMP_RESULT TRUE)
+set (DISPLAY FALSE)
+set (DUMP_RESULT FALSE)
 
 #######################
 # Find packages
