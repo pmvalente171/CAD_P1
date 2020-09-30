@@ -18,6 +18,8 @@ namespace cadlabs {
                 const universe_t universe,
                 const unsigned number_of_threads);
 
+
+
     protected:
         virtual void all_move_particles(double step);
 

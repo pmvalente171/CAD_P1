@@ -6,6 +6,7 @@
 
 #include "nbody.h"
 #include <unistd.h>
+#include <fstream>
 
 void usage(char *prog) {
     fprintf(stderr, "usage: %s number_particles [-t duration time] [-u universe] [-s seed]\n"
@@ -61,10 +62,10 @@ int main(int argc, char**argv) {
     double duration = (t2.tv_sec -t1.tv_sec)+((t2.tv_usec-t1.tv_usec)/1e6);
 
 #ifdef DUMP_RESULT
-    FILE* f_out = fopen("particles.log", "w");
-  assert(f_out);
-  nbody.print_all_particles(f_out);
-  fclose(f_out);
+    std::ofstream myfile;
+    myfile.open ("p1000_t10_u0.log");
+    nbody.print_all_particles(myfile);
+    myfile.close();
 #endif
 
     printf("-----------------------------\n");

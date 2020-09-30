@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <ostream>
 
 #ifdef DISPLAY
 #include "ui.h"
@@ -152,11 +153,11 @@ void nbody::all_init_particles() {
     }
 }
 
-void nbody::print_all_particles(FILE* f) {
-  int i;
-  for(i=0; i<number_particles; i++) {
+void nbody::print_all_particles(std::ostream& out) {
+  for(int i=0; i<number_particles; i++) {
     particle_t*p = &particles[i];
-    fprintf(f, "particle={pos=(%f,%f), vel=(%f,%f)}\n", p->x_pos, p->y_pos, p->x_vel, p->y_vel);
+    out << "particle={pos=(" << p->x_pos << "," << p->y_pos << "), vel=("
+        << p->x_vel << "," << p->y_vel << ")}\n";
   }
 }
 

@@ -1,7 +1,7 @@
 #ifndef NBODY_H
 #define NBODY_H
 
-#include <stdio.h>
+#include <ostream>
 
 enum class universe_t;
 
@@ -68,7 +68,7 @@ public:
 
     void run_simulation();
 
-    void print_all_particles(FILE* f);
+    void print_all_particles(std::ostream& out);
 
 
     const int number_particles;      /* number of particles */

@@ -65,3 +65,4 @@ if (${DUMP_RESULT})
 endif()
 
 
+set (LAB2_SOURCES ${NBODY_BASE_SOURCES}  par_nbody_all_pairs.cpp PARENT_SCOPE)
