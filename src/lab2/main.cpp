@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-
-#include "par_nbody_all_pairs.h"
 #include <unistd.h>
 #include <fstream>
+#include <thread>
+
+#include "par_nbody_all_pairs.h"
 #include <marrow/utils/timer.hpp>
 
 void usage(char *prog) {
@@ -28,11 +28,12 @@ int main(int argc, char**argv) {
     // default values
     float T_FINAL = 10.0;
     cadlabs::universe_t universe = cadlabs::universe_t::ORIGINAL;
-    unsigned number_of_threads = 0; // default: automatic
+    unsigned number_of_threads = std::thread::hardware_concurrency();
     auto number_of_runs = 1;
+    auto universe_seed = 0;
 
     int c;
-    while ((c = getopt(argc-1, argv+1, "t:u:s:#:")) != -1)
+    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:")) != -1)
         switch (c) {
             case 't':
                 T_FINAL = atof(optarg);
@@ -47,7 +48,7 @@ int main(int argc, char**argv) {
                 break;
 
             case 's':
-                //         universe_seed = atoi(optarg);;
+                universe_seed = atoi(optarg);;
                 break;
 
             case '#':
@@ -60,11 +61,11 @@ int main(int argc, char**argv) {
                 exit(1);
         }
 
-    cadlabs::par_nbody_all_pairs nbody(nparticles, T_FINAL, universe, number_of_threads);
+    cadlabs::par_nbody_all_pairs nbody(nparticles, T_FINAL, universe, universe_seed , number_of_threads);
     marrow::timer<> t;
 
     for (int i = 0; i < number_of_runs; i++) {
-        std::cout << "Simultion #" << i << "\n";
+        std::cout << "Simulation #" << i << "\n";
         t.start();
         nbody.run_simulation();
         t.stop();
@@ -79,8 +80,9 @@ int main(int argc, char**argv) {
 #endif
 
     printf("-----------------------------\n");
-    printf("nparticles: %d\n", nbody.number_particles);
-    printf("T_FINAL: %f\n", nbody.T_FINAL);
+    printf("number of particles: %d\n", nparticles);
+    printf("T_FINAL: %f\n", T_FINAL);
+    printf("number of threads: %d\n", number_of_threads);
     printf("-----------------------------\n");
     t.output_stats<false>(std::cout);
 

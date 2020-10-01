@@ -10,9 +10,10 @@ par_nbody_all_pairs::par_nbody_all_pairs(
         const int number_particles,
         const float t_final,
         const universe_t universe,
-        const unsigned number_of_threads) :
+        const unsigned number_of_threads,
+        const unsigned universe_seed) :
 
-    nbody(number_particles, t_final, universe),
+    nbody(number_particles, t_final, universe, universe_seed),
     number_of_threads (number_of_threads) { }
 
 

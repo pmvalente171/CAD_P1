@@ -33,7 +33,7 @@ TEST(NBody, Par_All_Pairs_P1000_T10_U0_T4) {
 
     auto nparticles = 1000;
     auto T_FINAL = 10.0;
-    auto universe = universe_t::ORIGINAL;
+    auto universe = cadlabs::universe_t::ORIGINAL;
     auto number_of_threads = 4;
     std::string original_result_log = "p1000_t10_u0.log";
 

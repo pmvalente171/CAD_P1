@@ -16,7 +16,8 @@ namespace cadlabs {
                 const int number_particles,
                 const float t_final,
                 const universe_t universe,
-                const unsigned number_of_threads);
+                const unsigned number_of_threads,
+                const unsigned universe_seed = 0);
 
 
 
