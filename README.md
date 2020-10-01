@@ -11,16 +11,20 @@ VECTORIZATION - Flag to set compiler's vectorization flags.
 
 ## Compile from the command line.
 
+```
 mkdir build
 cd build
 cmake ..
 make
+```
 
 ## Run the programs from the command line.
 
+```
 cd build
 src/lab1/nbody -- runs the sequential all pairs implementation
 src/lab2/par_nbody -- runs the parallel OpenMP-based all pairs implementation
+```
 
 ## The run_experiments script.
 
