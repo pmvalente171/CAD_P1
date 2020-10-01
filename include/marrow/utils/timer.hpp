@@ -143,7 +143,7 @@ namespace marrow {
             }
 
             ElapseTime average = 0;
-            for (unsigned i = s.account_from; i < s.account_to; i++)
+            for (unsigned i = s.account_from; i <= s.account_to; i++)
                 average += s.measurements[i];
             average /= s.number_measurements;
 
