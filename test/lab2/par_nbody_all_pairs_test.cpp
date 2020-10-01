@@ -37,7 +37,7 @@ TEST(NBody, Par_All_Pairs_P1000_T10_U0_T4) {
     auto number_of_threads = 4;
     std::string original_result_log = "p1000_t10_u0.log";
 
-    cadlabs::par_nbody_all_pairs nbody(nparticles, T_FINAL, universe, number_of_threads);
+    cadlabs::par_nbody_all_pairs nbody(nparticles, T_FINAL, number_of_threads, universe);
     nbody.run_simulation();
 
     std::stringstream ss;
