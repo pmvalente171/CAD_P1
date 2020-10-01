@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD 14)
 
 set (DISPLAY FALSE)
 set (DUMP_RESULT FALSE)
+set (VECTORIZATION FALSE)
 
 #######################
 # Find packages
@@ -27,6 +28,18 @@ if (${DISPLAY})
         message ("X11 not found - no graphical display support")
     endif()
 
+endif()
+
+
+##############################################################
+# Build executables
+##############################################################
+
+if (${VECTORIZATION})
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # using GCC/G++
+        set (CMAKE_CXX_FLAGS "-O2 -ftree-vectorize -fopt-info-vec-optimized")
+    endif()
 endif()
 
 include_directories(include)
