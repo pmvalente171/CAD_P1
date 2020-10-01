@@ -5,9 +5,9 @@ All new functionalities have a comment region with the developers name.
 
 ## Cmake configuration.
 
-DISPLAY - Flag to configure the program to display the particles movement. Requires X11.
-DUMP_RESULT - Flag to configure the program to dump the final positions of the particles to a file.
-VECTORIZATION - Flag to set compiler's vectorization flags.
+- DISPLAY - Flag to configure the program to display the particles movement. Requires X11.
+- DUMP_RESULT - Flag to configure the program to dump the final positions of the particles to a file.
+- VECTORIZATION - Flag to set compiler's vectorization flags.
 
 ## Compile from the command line.
 
