@@ -3,7 +3,7 @@
  */
 
 #include <nbody/par_nbody_all_pairs.h>
-#include <omp.h>
+
 namespace cadlabs {
 
 par_nbody_all_pairs::par_nbody_all_pairs(
@@ -16,11 +16,12 @@ par_nbody_all_pairs::par_nbody_all_pairs(
     number_of_threads (number_of_threads) { }
 
 
-
+/**
+ * TODO: A CUDA implementation
+ */
 void par_nbody_all_pairs::calculate_forces() {
         /* First calculate force for particles. */
 
-#pragma omp parallel for num_threads(number_of_threads)
     for (int i = 0; i < number_particles; i++) {
 
         particles[i].x_force = 0;

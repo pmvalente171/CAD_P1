@@ -4,12 +4,12 @@
 #include <assert.h>
 
 #ifdef DISPLAY
-#include "ui.h"
+#include "nbody/ui.h"
 #endif
 #include "nbody.h"
-#include "nbody_tools.h"
-#include "nbody_alloc.h"
-#include "nbody_universe.h"
+#include "nbody/nbody_tools.h"
+#include "nbody/nbody_alloc.h"
+#include "nbody/nbody_universe.h"
 
 namespace cadlabs {
     extern node_t *root;

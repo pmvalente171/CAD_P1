@@ -9,11 +9,11 @@
 #include <stdlib.h>
 #include <ostream>
 
-#include "nbody_tools.h"
-#include "nbody_universe.h"
+#include "nbody/nbody_tools.h"
+#include "nbody/nbody_universe.h"
 
 #ifdef DISPLAY
-#include "ui.h"
+#include "nbody/ui.h"
 #endif
 
 

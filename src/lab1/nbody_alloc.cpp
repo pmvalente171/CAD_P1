@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "nbody_alloc.h"
+#include "nbody/nbody_alloc.h"
 
 static void* mem_new_buffer(struct memory_t *mem, int nb_blocks) {
   Bloc *ptr = static_cast<Bloc*>(calloc(nb_blocks, mem->block_size));

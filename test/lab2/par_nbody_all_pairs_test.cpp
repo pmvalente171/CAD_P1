@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include <fstream>
 
-#include <par_nbody_all_pairs.h>
+#include <nbody/par_nbody_all_pairs.h>
 
 /**
  * Compares the result produced and stored in stream result_stream with the log in file logfilename

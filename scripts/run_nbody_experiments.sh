@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# usage:  run_experiments.sh build_directory
+# usage:  run_nbody_experiments.sh build_directory
 #
 
 # Number of thread configurations tested

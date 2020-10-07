@@ -1,7 +1,8 @@
-#include <stdio.h>
-#include "xstuff.h"
+#include "nbody/ui.h"
 
-#include "ui.h"
+#include <stdio.h>
+#include "nbody/xstuff.h"
+
 
 void simple_init(int x, int y, unsigned width, unsigned height)
 {

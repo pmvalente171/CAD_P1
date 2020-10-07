@@ -2,8 +2,7 @@
 // Created by Hervé Paulino on 23/09/2020.
 //
 
-
-#include "nbody_universe.h"
+#include "nbody/nbody_universe.h"
 
 #include <stdlib.h>
 #include <math.h>

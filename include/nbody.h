@@ -3,7 +3,7 @@
 
 #include <ostream>
 
-#include "nbody_universe.h"
+#include "nbody/nbody_universe.h"
 namespace cadlabs {
 
 

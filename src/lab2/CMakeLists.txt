@@ -44,7 +44,7 @@ set (PARALLEL_NBODY_ALL_PAIRS par_nbody)
 if (${DISPLAY})
     set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES} par_nbody_all_pairs.cpp main.cpp)
 else()
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES}  par_nbody_all_pairs.cpp main.cpp)
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} par_nbody_all_pairs.cpp main.cpp)
 endif()
 
 add_executable(${PARALLEL_NBODY_ALL_PAIRS} ${NBODY_SOURCES})
@@ -65,4 +65,4 @@ if (${DUMP_RESULT})
 endif()
 
 
-set (LAB2_SOURCES ${NBODY_BASE_SOURCES}  par_nbody_all_pairs.cpp PARENT_SCOPE)
+set (LAB2_SOURCES ${NBODY_BASE_SOURCES} par_nbody_all_pairs.cpp PARENT_SCOPE)
