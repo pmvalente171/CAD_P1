@@ -3,6 +3,7 @@ project(cadlabs-gpu LANGUAGES CXX CUDA)
 
 set(CMAKE_CXX_STANDARD 14)
 
+
 #######################
 # NBody setup
 #######################

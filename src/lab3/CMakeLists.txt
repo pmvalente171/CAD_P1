@@ -7,41 +7,38 @@ add_executable(card_info ${CMAKE_CURRENT_SOURCE_DIR}/card_info.cu)
 # NBody
 #############
 
+set (NBODY_SEQ_FOLDER ${PROJECT_SOURCE_DIR}/src/lab1)
+
 set (NBODY_BASE_SOURCES
-        ../lab1/nbody_alloc.cpp
-        ../lab1/nbody_tools.cpp
-        ../lab1/universe_generation.cpp
-        ../lab1/nbody_all_pairs.cpp)
+        ${NBODY_SEQ_FOLDER}/nbody_alloc.cpp
+        ${NBODY_SEQ_FOLDER}/nbody_tools.cpp
+        ${NBODY_SEQ_FOLDER}/universe_generation.cpp
+        ${NBODY_SEQ_FOLDER}/nbody_all_pairs.cpp)
 
 set (NBODY_DISPLAY_SOURCES
-        ../lab1/ui.cpp
-        ../lab1/xstuff.cpp)
+        ${NBODY_SEQ_FOLDER}/ui.cpp
+        ${NBODY_SEQ_FOLDER}/xstuff.cpp)
 
 
 set (CUDA_NBODY_ALL_PAIRS cuda_nbody)
 
 if (${DISPLAY})
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES} cuda_nbody_all_pairs.cu main.cpp)
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES})
 else()
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} par_nbody_all_pairs.cpp main.cpp)
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES})
 endif()
 
-add_executable(${PARALLEL_NBODY_ALL_PAIRS} ${NBODY_SOURCES})
+add_executable(${CUDA_NBODY_ALL_PAIRS} ${NBODY_SOURCES} cuda_nbody_all_pairs.cpp cuda_nbody_main.cpp)
 
-if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    target_link_libraries(${PARALLEL_NBODY_ALL_PAIRS} /usr/local/opt/llvm/lib/libomp.dylib)
-    target_compile_options(${PARALLEL_NBODY_ALL_PAIRS} PRIVATE  ${OpenMP_CXX_FLAGS})
-else()
-    target_link_libraries(${PARALLEL_NBODY_ALL_PAIRS} OpenMP::OpenMP_CXX)
-endif()
+
 
 if (${DISPLAY})
-    target_compile_definitions(${PARALLEL_NBODY_ALL_PAIRS} PRIVATE "-DDISPLAY")
+    target_compile_definitions(${CUDA_NBODY_ALL_PAIRS} PRIVATE "-DDISPLAY")
 endif()
 
 if (${DUMP_RESULT})
-    target_compile_definitions(${PARALLEL_NBODY_ALL_PAIRS} PRIVATE "-DDUMP_RESULT")
+    target_compile_definitions(${CUDA_NBODY_ALL_PAIRS} PRIVATE "-DDUMP_RESULT")
 endif()
 
 
-set (LAB2_SOURCES ${NBODY_BASE_SOURCES} par_nbody_all_pairs.cpp PARENT_SCOPE)
+set (LAB3_SOURCES ${NBODY_BASE_SOURCES} cuda_nbody_all_pairs.cu PARENT_SCOPE)

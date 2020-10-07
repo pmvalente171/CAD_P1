@@ -17,12 +17,12 @@ link_libraries("m")
 set (NBODY_ALL_PAIRS nbody)
 
 if (${DISPLAY})
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES} main.cpp)
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES})
 else()
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} main.cpp)
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES})
 endif()
 
-add_executable(${NBODY_ALL_PAIRS} ${NBODY_SOURCES})
+add_executable(${NBODY_ALL_PAIRS} ${NBODY_SOURCES} main.cpp)
 
 if (${DISPLAY})
     message ("-- Nbody: display option activated")

@@ -1,13 +1,14 @@
+set (NBODY_SEQ_FOLDER ${PROJECT_SOURCE_DIR}/src/lab1)
 
 set (NBODY_BASE_SOURCES
-        ../lab1/nbody_alloc.cpp
-        ../lab1/nbody_tools.cpp
-        ../lab1/universe_generation.cpp
-        ../lab1/nbody_all_pairs.cpp)
+        ${NBODY_SEQ_FOLDER}/nbody_alloc.cpp
+        ${NBODY_SEQ_FOLDER}/nbody_tools.cpp
+        ${NBODY_SEQ_FOLDER}/universe_generation.cpp
+        ${NBODY_SEQ_FOLDER}/nbody_all_pairs.cpp)
 
 set (NBODY_DISPLAY_SOURCES
-        ../lab1/ui.cpp
-        ../lab1/xstuff.cpp)
+        ${NBODY_SEQ_FOLDER}/ui.cpp
+        ${NBODY_SEQ_FOLDER}/xstuff.cpp)
 
 ######################
 # Find packages
@@ -42,12 +43,12 @@ find_package(OpenMP REQUIRED)
 set (PARALLEL_NBODY_ALL_PAIRS par_nbody)
 
 if (${DISPLAY})
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES} par_nbody_all_pairs.cpp main.cpp)
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES})
 else()
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} par_nbody_all_pairs.cpp main.cpp)
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES})
 endif()
 
-add_executable(${PARALLEL_NBODY_ALL_PAIRS} ${NBODY_SOURCES})
+add_executable(${PARALLEL_NBODY_ALL_PAIRS} ${NBODY_SOURCES} par_nbody_all_pairs.cpp main.cpp)
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
     target_link_libraries(${PARALLEL_NBODY_ALL_PAIRS} /usr/local/opt/llvm/lib/libomp.dylib)
