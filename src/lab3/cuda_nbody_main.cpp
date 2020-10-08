@@ -4,7 +4,7 @@
 #include <fstream>
 #include <thread>
 
-#include "nbody/par_nbody_all_pairs.h"
+#include "nbody/cuda_nbody_all_pairs.h"
 #include <marrow/utils/timer.hpp>
 
 void usage(char *prog) {
@@ -61,7 +61,7 @@ int main(int argc, char**argv) {
                 exit(1);
         }
 
-    cadlabs::par_nbody_all_pairs nbody(nparticles, T_FINAL, number_of_threads, universe, universe_seed);
+    cadlabs::cuda_nbody_all_pairs nbody(nparticles, T_FINAL, number_of_threads, universe, universe_seed);
     marrow::timer<> t;
 
     for (int i = 0; i < number_of_runs; i++) {
