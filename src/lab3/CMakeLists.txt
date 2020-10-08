@@ -28,7 +28,7 @@ else()
     set (NBODY_SOURCES ${NBODY_BASE_SOURCES})
 endif()
 
-add_executable(${CUDA_NBODY_ALL_PAIRS} ${NBODY_SOURCES} cuda_nbody_all_pairs.cpp cuda_nbody_main.cpp)
+add_executable(${CUDA_NBODY_ALL_PAIRS} ${NBODY_SOURCES} cuda_nbody_all_pairs.cu cuda_nbody_main.cpp)
 
 
 
