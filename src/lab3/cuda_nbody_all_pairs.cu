@@ -12,17 +12,16 @@ cuda_nbody_all_pairs::cuda_nbody_all_pairs(
         const unsigned number_of_threads,
         const universe_t universe,
         const unsigned universe_seed) :
-
         nbody(number_particles, t_final, universe, universe_seed) {
 
-    cudaMalloc((void **)&gpu_particles, number_particles);
+    cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
 }
 
 void cuda_nbody_all_pairs::all_init_particles() {
     nbody::all_init_particles();
 
     // TODO cuda mem cpy to gpu particles
-
+   
 }
 
 __global__ void nbody_kernel(particle_t* particles, const unsigned number_particles) {
