@@ -4,6 +4,8 @@
 
 #include <nbody/cuda_nbody_all_pairs.h>
 
+static constexpr int thread_block_size = 512;
+
 namespace cadlabs {
 
 cuda_nbody_all_pairs::cuda_nbody_all_pairs(
@@ -17,17 +19,47 @@ cuda_nbody_all_pairs::cuda_nbody_all_pairs(
     cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
 }
 
+cuda_nbody_all_pairs::cuda_nbody_all_pairs() {
+    cudaFree(gpu_particles);
+}
+
+/*
 void cuda_nbody_all_pairs::all_init_particles() {
     nbody::all_init_particles();
 
     // TODO cuda mem cpy to gpu particles
-   
-}
+    cudaMemcpy(gpu_particles, particles, number_particles*sizeof(particle_t),  cudaMemcpyHostToDevice);
+}*/
 
 __global__ void nbody_kernel(particle_t* particles, const unsigned number_particles) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
 
+    if (index < number_particles) {
+
+        particle_t *pi = &particles[index];
+        pi->x_force = 0;
+        pi->y_force = 0;
+
+        for (int j = 0; j < number_particles; j++) {
+            particle_t *pj = &particles[j];
+            /* compute the force of particle j on particle i */
+
+            double x_sep, y_sep, dist_sq, grav_base;
+
+            x_sep = pj->x_pos - pi->x_pos;
+            y_sep = pj->y_pos - pi->y_pos;
+            dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
+
+            /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
+            grav_base = GRAV_CONSTANT * (pi->mass) * (pj->mass) / dist_sq;
+
+            pi->x_force += grav_base * x_sep;
+            pi->y_force += grav_base * y_sep;
+        }
+    }
+
 }
+
 
 /**
  * TODO: A CUDA implementation
@@ -35,18 +67,11 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
 void cuda_nbody_all_pairs::calculate_forces() {
         /* First calculate force for particles. */
 
-    for (int i = 0; i < number_particles; i++) {
-
-        particles[i].x_force = 0;
-        particles[i].y_force = 0;
-        for (int j = 0; j < number_particles; j++) {
-            particle_t *p = &particles[j];
-            /* compute the force of particle j on particle i */
-            compute_force(&particles[i], p->x_pos, p->y_pos, p->mass);
-        }
-    }
+    cudaMemcpy(gpu_particles, particles, number_particles*sizeof(particle_t),  cudaMemcpyHostToDevice);
+    const auto nb = (number_particles + thread_block_size - 1)/thread_block_size;
+    nbody_kernel<<<nb, thread_block_size>>>(gpu_particles, number_particles);
+    cudaMemcpy(particles, gpu_particles, number_particles*sizeof(particle_t), cudaMemcpyDeviceToHost);
 }
-
 
 
 } // namespace

@@ -20,7 +20,6 @@ namespace cadlabs {
                 const unsigned universe_seed = 0);
 
 
-
     protected:
         void calculate_forces();
 
