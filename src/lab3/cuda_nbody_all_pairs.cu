@@ -19,7 +19,7 @@ cuda_nbody_all_pairs::cuda_nbody_all_pairs(
     cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
 }
 
-cuda_nbody_all_pairs::cuda_nbody_all_pairs() {
+cuda_nbody_all_pairs::~cuda_nbody_all_pairs() {
     cudaFree(gpu_particles);
 }
 
@@ -67,10 +67,6 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
 void cuda_nbody_all_pairs::calculate_forces() {
         /* First calculate force for particles. */
 
-    cudaMemcpy(gpu_particles, particles, number_particles*sizeof(particle_t),  cudaMemcpyHostToDevice);
-    const auto nb = (number_particles + thread_block_size - 1)/thread_block_size;
-    nbody_kernel<<<nb, thread_block_size>>>(gpu_particles, number_particles);
-    cudaMemcpy(particles, gpu_particles, number_particles*sizeof(particle_t), cudaMemcpyDeviceToHost);
 }
 
 

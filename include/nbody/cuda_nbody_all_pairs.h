@@ -19,6 +19,7 @@ namespace cadlabs {
                 const universe_t universe,
                 const unsigned universe_seed = 0);
 
+        ~cuda_nbody_all_pairs();
 
     protected:
         void calculate_forces();
