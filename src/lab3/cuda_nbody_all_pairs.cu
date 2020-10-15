@@ -63,13 +63,6 @@ void cuda_nbody_all_pairs::calculate_forces() {
 }
 
 
-
-
-
-
-
-
-
 void cuda_nbody_all_pairs::move_all_particles(double step) {
         nbody::move_all_particles(step);
 }

@@ -21,12 +21,18 @@ namespace cadlabs {
 
         ~cuda_nbody_all_pairs();
 
+        void print_all_particles(std::ostream &out);
+
     protected:
         void calculate_forces();
 
         void all_init_particles();
 
+        void move_all_particles(double step);
+
         particle_t *gpu_particles;
+
+        const unsigned number_blocks;
 
     };
 }
