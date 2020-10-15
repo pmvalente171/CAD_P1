@@ -82,7 +82,6 @@ int main(int argc, char**argv) {
     printf("-----------------------------\n");
     printf("number of particles: %d\n", nparticles);
     printf("T_FINAL: %f\n", T_FINAL);
-    printf("number of threads: %d\n", number_of_threads);
     printf("-----------------------------\n");
     t.output_stats<false>(std::cout);
 

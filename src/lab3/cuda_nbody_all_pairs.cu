@@ -14,7 +14,8 @@ cuda_nbody_all_pairs::cuda_nbody_all_pairs(
         const unsigned number_of_threads,
         const universe_t universe,
         const unsigned universe_seed) :
-        nbody(number_particles, t_final, universe, universe_seed) {
+        nbody(number_particles, t_final, universe, universe_seed),
+        number_blocks ((number_particles + thread_block_size - 1)/thread_block_size)  {
 
     cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
 }
@@ -23,13 +24,6 @@ cuda_nbody_all_pairs::~cuda_nbody_all_pairs() {
     cudaFree(gpu_particles);
 }
 
-/*
-void cuda_nbody_all_pairs::all_init_particles() {
-    nbody::all_init_particles();
-
-    // TODO cuda mem cpy to gpu particles
-    cudaMemcpy(gpu_particles, particles, number_particles*sizeof(particle_t),  cudaMemcpyHostToDevice);
-}*/
 
 __global__ void nbody_kernel(particle_t* particles, const unsigned number_particles) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -57,7 +51,6 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
             pi->y_force += grav_base * y_sep;
         }
     }
-
 }
 
 
@@ -67,6 +60,22 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
 void cuda_nbody_all_pairs::calculate_forces() {
         /* First calculate force for particles. */
 
+}
+
+
+
+
+
+
+
+
+
+void cuda_nbody_all_pairs::move_all_particles(double step) {
+        nbody::move_all_particles(step);
+}
+
+void cuda_nbody_all_pairs::print_all_particles(std::ostream &out) {
+    nbody::print_all_particles(out);
 }
 
 
