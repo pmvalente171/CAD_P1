@@ -17,16 +17,18 @@ cuda_nbody_all_pairs::cuda_nbody_all_pairs(
         nbody(number_particles, t_final, universe, universe_seed),
         number_blocks ((number_particles + thread_block_size - 1)/thread_block_size)  {
 
-    cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
+    // cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
 }
 
 cuda_nbody_all_pairs::~cuda_nbody_all_pairs() {
-    cudaFree(gpu_particles);
+    // cudaFree(gpu_particles);
 }
 
 
 __global__ void nbody_kernel(particle_t* particles, const unsigned number_particles) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // while (true) {}
 
     if (index < number_particles) {
 
@@ -58,13 +60,18 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
  * TODO: A CUDA implementation
  */
 void cuda_nbody_all_pairs::calculate_forces() {
-        /* First calculate force for particles. */
-
+    /* First calculate force for particles. */
+    cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
+    uint count = number_particles * sizeof(particle_t);
+    cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
+    nbody_kernel<<<number_blocks, thread_block_size>>>(gpu_particles, number_particles);
+    cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
+    cudaFree(gpu_particles);
 }
 
 
 void cuda_nbody_all_pairs::move_all_particles(double step) {
-        nbody::move_all_particles(step);
+    nbody::move_all_particles(step);
 }
 
 void cuda_nbody_all_pairs::print_all_particles(std::ostream &out) {
