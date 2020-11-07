@@ -23,9 +23,9 @@ set (NBODY_DISPLAY_SOURCES
 set (CUDA_NBODY_ALL_PAIRS cuda_nbody)
 
 if (${DISPLAY})
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES})
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES} ../lab1/get_output.cpp ../lab1/get_output.h)
 else()
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES})
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ../lab1/get_output.cpp ../lab1/get_output.h)
 endif()
 
 add_executable(${CUDA_NBODY_ALL_PAIRS} ${NBODY_SOURCES} cuda_nbody_all_pairs.cu cuda_nbody_main.cpp)

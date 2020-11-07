@@ -4,11 +4,11 @@ set (NBODY_BASE_SOURCES
         ${NBODY_SEQ_FOLDER}/nbody_alloc.cpp
         ${NBODY_SEQ_FOLDER}/nbody_tools.cpp
         ${NBODY_SEQ_FOLDER}/universe_generation.cpp
-        ${NBODY_SEQ_FOLDER}/nbody_all_pairs.cpp)
+        ${NBODY_SEQ_FOLDER}/nbody_all_pairs.cpp ../lab1/get_output.cpp ../lab1/get_output.h)
 
 set (NBODY_DISPLAY_SOURCES
         ${NBODY_SEQ_FOLDER}/ui.cpp
-        ${NBODY_SEQ_FOLDER}/xstuff.cpp)
+        ${NBODY_SEQ_FOLDER}/xstuff.cpp ../lab1/get_output.cpp ../lab1/get_output.h)
 
 ######################
 # Find packages
@@ -43,7 +43,7 @@ find_package(OpenMP REQUIRED)
 set (PARALLEL_NBODY_ALL_PAIRS par_nbody)
 
 if (${DISPLAY})
-    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES})
+    set (NBODY_SOURCES ${NBODY_BASE_SOURCES} ${NBODY_DISPLAY_SOURCES} ../lab1/get_output.cpp ../lab1/get_output.h)
 else()
     set (NBODY_SOURCES ${NBODY_BASE_SOURCES})
 endif()

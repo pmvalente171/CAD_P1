@@ -182,6 +182,13 @@ namespace cadlabs {
             /* Move particles with the current and compute rms velocity. */
             all_move_particles(dt);
 
+            // TODO: add a method here that
+            //  Store the values in some type
+            //  of file maybe use an #if ???
+#if DEBUG
+
+#endif
+
             /* Adjust dt based on maximum speed and acceleration--this
                simple rule tries to insure that no velocity will change
                by more than 10% */
