@@ -26,9 +26,11 @@ void get_output::save_values_by_iteration(particle_t *particles, int nb_of_parti
 }
 
 get_output::get_output(const string& file_name) {
-    outfile.open(file_name);
+    if (!file_name.empty())
+        outfile.open(file_name);
 }
 
 get_output::~get_output() {
-    outfile.close();
+    if (outfile.is_open())
+        outfile.close();
 }

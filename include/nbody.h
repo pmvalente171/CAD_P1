@@ -42,7 +42,7 @@ namespace cadlabs {
          * @param universe universe type
          * @param universe_seed Seed for the creation of the universe (if needed). Default 0 (no seed)
          */
-        nbody(const int number_particles, const float t_final, const universe_t universe, const unsigned universe_seed = 0);
+        nbody(const int number_particles, const float t_final, const universe_t universe, const unsigned universe_seed = 0, const string file_name = "");
 
         virtual ~nbody();
 

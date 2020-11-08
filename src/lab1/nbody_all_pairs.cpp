@@ -1,19 +1,16 @@
 /*
-** nbody_brute_force.c - nbody simulation using the brute-force algorithm (O(n*n))
-**
-**/
+ * nbody_brute_force.c - nbody simulation using the brute-force algorithm (O(n*n))
+ *
+ */
 
 #include "nbody.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <ostream>
-
-// #define DEBUG
-#define FILE_NAME "testFile.txt"
-
-#include "nbody/nbody_tools.h"
 #include "nbody/nbody_universe.h"
+
+#define DEBUG
 
 #ifdef DISPLAY
 #include "nbody/ui.h"
@@ -26,20 +23,21 @@ namespace cadlabs {
     double max_speed = 0;
 
 
-    nbody::nbody(const int number_particles, const float t_final, const universe_t universe, const unsigned universe_seed) :
+    nbody::nbody(const int number_particles, const float t_final, const universe_t universe, const unsigned universe_seed, const string file_name) :
             number_particles(number_particles),
             T_FINAL(t_final),
             universe(universe),
             universe_seed (universe_seed),
             particles(static_cast<particle_t *>(malloc(sizeof(particle_t) * number_particles))) {
 
+        all_init_particles();
 #ifdef DISPLAY
         /* Open an X window to display the particles */
         simple_init (100,100, DISPLAY_SIZE, DISPLAY_SIZE);
 #endif
-
-        all_init_particles();
-        debug = new get_output(FILE_NAME); // TODO: Maybe change this?
+#ifdef DEBUG
+        debug = new get_output(file_name); // TODO: Maybe change this?
+#endif
     }
 
     nbody::~nbody() {
@@ -53,6 +51,9 @@ namespace cadlabs {
         getchar();
         /* Close the X window used to display the particles */
         XCloseDisplay(theDisplay);
+#endif
+#ifdef DEBUG
+        debug->~get_output();
 #endif
     }
 
@@ -101,7 +102,6 @@ namespace cadlabs {
 
 /*
   Move particles one time step.
-
   Update positions, velocity, and acceleration.
   Return local computations.
 */
@@ -184,12 +184,6 @@ namespace cadlabs {
             /* Move particles with the current and compute rms velocity. */
             all_move_particles(dt);
 
-            // TODO: add a method here that
-            //  Store the values in some type
-            //  of file maybe use an #if ???
-#ifdef DEBUG
-            debug->save_values_by_iteration(particles, number_particles);
-#endif
             /*
              * Adjust dt based on maximum speed and acceleration--this
              * simple rule tries to insure that no velocity will change
@@ -205,6 +199,10 @@ namespace cadlabs {
             flush_display();
 #endif
         }
+
+#ifdef DEBUG
+        debug->save_values_by_iteration(particles, number_particles);
+#endif
     }
 }
 

@@ -13,8 +13,9 @@ cuda_nbody_all_pairs::cuda_nbody_all_pairs(
         const float t_final,
         const unsigned number_of_threads,
         const universe_t universe,
-        const unsigned universe_seed) :
-        nbody(number_particles, t_final, universe, universe_seed),
+        const unsigned universe_seed,
+        const string file_name) :
+        nbody(number_particles, t_final, universe, universe_seed, file_name),
         number_blocks ((number_particles + thread_block_size - 1)/thread_block_size)  {
 
     // cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));

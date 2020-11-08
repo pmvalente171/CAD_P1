@@ -17,7 +17,8 @@ namespace cadlabs {
                 const float t_final,
                 const unsigned number_of_threads,
                 const universe_t universe,
-                const unsigned universe_seed = 0);
+                const unsigned universe_seed = 0,
+                const string file_name = "");
 
         ~cuda_nbody_all_pairs();
 
