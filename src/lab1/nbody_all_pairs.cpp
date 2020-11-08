@@ -9,13 +9,15 @@
 #include <stdlib.h>
 #include <ostream>
 
+// #define DEBUG
+#define FILE_NAME "testFile.txt"
+
 #include "nbody/nbody_tools.h"
 #include "nbody/nbody_universe.h"
 
 #ifdef DISPLAY
 #include "nbody/ui.h"
 #endif
-
 
 namespace cadlabs {
 
@@ -37,6 +39,7 @@ namespace cadlabs {
 #endif
 
         all_init_particles();
+        debug = new get_output(FILE_NAME); // TODO: Maybe change this?
     }
 
     nbody::~nbody() {
@@ -148,7 +151,6 @@ namespace cadlabs {
   Place particles in their initial positions.
 */
 
-
     void nbody::all_init_particles() {
 
         if (universe_seed)
@@ -185,13 +187,14 @@ namespace cadlabs {
             // TODO: add a method here that
             //  Store the values in some type
             //  of file maybe use an #if ???
-#if DEBUG
-
+#ifdef DEBUG
+            debug->save_values_by_iteration(particles, number_particles);
 #endif
-
-            /* Adjust dt based on maximum speed and acceleration--this
-               simple rule tries to insure that no velocity will change
-               by more than 10% */
+            /*
+             * Adjust dt based on maximum speed and acceleration--this
+             * simple rule tries to insure that no velocity will change
+             * by more than 10%
+            */
 
             dt = 0.1 * max_speed / max_acc;
 

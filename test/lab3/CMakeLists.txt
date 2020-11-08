@@ -8,7 +8,7 @@ set (CUDA_NBODY_SOURCES
         ${SOURCE_FOLDER}/lab1/nbody_tools.cpp
         ${SOURCE_FOLDER}/lab1/universe_generation.cpp
         ${SOURCE_FOLDER}/lab1/nbody_all_pairs.cpp
-        ${SOURCE_FOLDER}/lab3/cuda_nbody_all_pairs.cu)
+        ${SOURCE_FOLDER}/lab3/cuda_nbody_all_pairs.cu ../../include/nbody/data_types.h)
 
 set (TEST_SOURCES
         vector_add_cuda_test.cu
