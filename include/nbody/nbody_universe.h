@@ -1,10 +1,10 @@
 #ifndef NBODY_UNIVERSE_H
 #define NBODY_UNIVERSE_H
 
+#include "data_types.h"
+using namespace data_types;
 
 namespace cadlabs {
-
-    struct particle_t;
 
 // Universes
     enum class universe_t {

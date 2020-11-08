@@ -12,7 +12,8 @@ void usage(char *prog) {
                     "\t-t --> number of end time (default 1.0)\n"
                     "\t-u --> universe type [0 - line, 1 - sphere, 2 - rotating disc] (default 0)\n"
                     "\t-s --> seed for universe creation (if needed).\n"
-                    "\t-# --> number of times running the simulation (default 1)\n", prog);
+                    "\t-# --> number of times running the simulation (default 1)\n"
+                    "\t-d --> prints to a file the particles positions to an output file named arg\n", prog);
 }
 
 int main(int argc, char**argv) {
@@ -29,9 +30,10 @@ int main(int argc, char**argv) {
     cadlabs::universe_t universe = cadlabs::universe_t::ORIGINAL;
     auto number_of_runs = 1;
     auto universe_seed = 0; // No seed
+    auto file_name = "";
 
     int c;
-    while ((c = getopt(argc-1, argv+1, "t:u:s:#:")) != -1)
+    while ((c = getopt(argc-1, argv+1, "t:u:s:#:d:")) != -1)
         switch (c) {
             case 't':
                 T_FINAL = atof(optarg);
@@ -42,20 +44,22 @@ int main(int argc, char**argv) {
                 break;
 
             case 's':
-                universe_seed = atoi(optarg);;
+                universe_seed = atoi(optarg);
                 break;
 
             case '#':
-                number_of_runs = atoi(optarg);;
+                number_of_runs = atoi(optarg);
                 break;
-
+            case 'd':
+                file_name = optarg;
+            break;
             default:
                 fprintf (stderr, "%c option not supported\n", c);
                 usage(argv[0]);
                 exit(1);
         }
 
-    cadlabs::nbody nbody(nparticles, T_FINAL, universe, universe_seed);
+    cadlabs::nbody nbody(nparticles, T_FINAL, universe, universe_seed, file_name);
 
     marrow::timer<> t;
 

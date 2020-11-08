@@ -13,7 +13,8 @@ void usage(char *prog) {
                     "\t-n --> number of threads running the simulation (default number of hardware threads)\n"
                     "\t-u --> universe type [0 - line, 1 - sphere, 2 - rotating disc] (default 0)\n"
                     "\t-s --> seed for universe creation (if needed).\n"
-                    "\t-# --> number of times running the simulation (default 1)\n", prog);
+                    "\t-# --> number of times running the simulation (default 1)\n"
+                    "\t-d --> prints to a file the particles positions to an output file named arg\n", prog);
 }
 
 int main(int argc, char**argv) {
@@ -31,9 +32,10 @@ int main(int argc, char**argv) {
     unsigned number_of_threads = std::thread::hardware_concurrency();
     auto number_of_runs = 1;
     auto universe_seed = 0;
+    auto file_name = "";
 
     int c;
-    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:")) != -1)
+    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:d:")) != -1)
         switch (c) {
             case 't':
                 T_FINAL = atof(optarg);
@@ -55,13 +57,17 @@ int main(int argc, char**argv) {
                 number_of_runs = atoi(optarg);;
                 break;
 
+            case 'd':
+                file_name = optarg;
+                break;
+
             default:
                 fprintf (stderr, "%c option not supported\n", c);
                 usage(argv[0]);
                 exit(1);
         }
 
-    cadlabs::cuda_nbody_all_pairs nbody(nparticles, T_FINAL, number_of_threads, universe, universe_seed);
+    cadlabs::cuda_nbody_all_pairs nbody(nparticles, T_FINAL, number_of_threads, universe, universe_seed, file_name);
     marrow::timer<> t;
 
     for (int i = 0; i < number_of_runs; i++) {
