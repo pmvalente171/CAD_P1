@@ -48,10 +48,10 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
 }
 
 __global__ void two_cycles_parallel(particle_t* particles, const unsigned number_particles) {
-    __shared__ particle_t targetParticles[blockDim.x];
-    __shared__ particle_t forceParticles[blockDim.y];
-    int targetParticle = blockIdx.x * blockDim.x + threadId.x;
-    int forceEffectParticle = blockIdx.y * blockDim.y + threadId.y;
+    __shared__ particle_t targetParticles[thread_block_size];
+    __shared__ particle_t forceParticles[thread_block_size];
+    int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
+    int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
     if (targetParticle < number_particles && forceEffectParticle < number_particles) {
         /*
          * The particle's forces are set to 0 several times (the y dimension of the blocks)
@@ -59,20 +59,20 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
          *  view the forces initially as 0. Setting a value to 0 is concurrency free.
          * Only a single thread per particle per block caches the target particle to local memory
          */
-        if (!threadId.y) {
+        if (!threadIdx.y) {
             particle_t *p = &particles[targetParticle];
             p->x_force = 0;
             p->y_force = 0;
-            targetParticles[threadId.x] = particles[targetParticle];
+            targetParticles[threadIdx.x] = particles[targetParticle];
         }
         __syncthreads();
 
-        if (!threadId.x)
-            forceParticles[threadId.y] = particles[forceEffectParticle];
+        if (!threadIdx.x)
+            forceParticles[threadIdx.y] = particles[forceEffectParticle];
         __syncthreads();
 
-        particle_t *tp = &targetParticles[threadId.x];
-        particle_t *fp = &forceParticles[threadId.y];
+        particle_t *tp = &targetParticles[threadIdx.x];
+        particle_t *fp = &forceParticles[threadIdx.y];
         double x_sep, y_sep, dist_sq, grav_base;
         x_sep = fp->x_pos - tp->x_pos;
         y_sep = fp->y_pos - tp->y_pos;
@@ -80,13 +80,13 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
         grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
         double forceIncreaseX = grav_base * x_sep;
         double forceIncreaseY = grav_base * y_sep;
-        atomicAdd(tp->x_force, forceIncreaseX);
-        atomicAdd(tp->y_force, forceIncreaseY);
-        __synchthreads();
+        atomicAdd(((float *) &(tp->x_force)), ((float)forceIncreaseX));
+        atomicAdd(((float *)&(tp->y_force)), ((float)forceIncreaseY));
+        __syncthreads();
 
-        if (!threadId.y) {
-            atomicAdd(number_particles[targetParticle].force_x, tp->force_x);
-            atomicAdd(number_particles[targetParticle].force_y, tp->force_y);
+        if (!threadIdx.y) {
+            atomicAdd(((float *)&(particles[targetParticle].x_force)), ((float)tp->x_force));
+            atomicAdd(((float *)&(particles[targetParticle].y_force)), ((float)tp->y_force));
         }
     }
 }
@@ -100,8 +100,8 @@ void cuda_nbody_all_pairs::calculate_forces() {
     cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
     uint count = number_particles * sizeof(particle_t);
     cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
-    dim2 grid(number_blocks, number_blocks);
-    dim2 block(thread_block_size, thread_block_size);
+    dim3 grid(number_blocks, number_blocks, 1);
+    dim3 block(thread_block_size, thread_block_size, 1);
     two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles);
     cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
     cudaFree(gpu_particles);
