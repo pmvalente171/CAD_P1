@@ -4,7 +4,7 @@
 
 #include <nbody/cuda_nbody_all_pairs.h>
 
-static constexpr int thread_block_size = 512;
+static constexpr int thread_block_size = 256;
 
 namespace cadlabs {
 
