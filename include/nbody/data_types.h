@@ -21,6 +21,18 @@ namespace data_types{
         node_t *node;        /* only used for the barnes-hut algorithm */
     };
 
+
+    // TODO: Add a bunch of
+    //  templated functions
+    //  to help out with this
+    //  structs
+    struct particles {
+
+    };
+
+    // A method for adding a value to a particle
+
+
     /* Only used in the barnes-Hut algorithm */
     struct node_t {
         node_t *parent;
