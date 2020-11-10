@@ -1,1 +1,4 @@
 cmake-build-debug
+
+#CLION deplyoment stuff
+.idea/*
