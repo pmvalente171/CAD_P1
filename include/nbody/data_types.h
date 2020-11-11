@@ -29,7 +29,7 @@ namespace data_types{
     //  templated functions
     //  to help out with this
     //  structs
-    struct particles {
+    struct particle_soa {
         float *x_pos, *y_pos;
         float *x_vel, *y_vel;
         float *x_force, *y_force;
@@ -42,8 +42,8 @@ namespace data_types{
         node_t *parent;
         node_t *children;
         particle_t *particle;
-        int n_particles; //number of particles in this node and its sub-nodes
-        double mass; // mass of the node (ie. sum of its particles mass)
+        int n_particles; //number of particle_soa in this node and its sub-nodes
+        double mass; // mass of the node (ie. sum of its particle_soa mass)
         double x_center, y_center; // center of the mass
         int depth;
         int owner;

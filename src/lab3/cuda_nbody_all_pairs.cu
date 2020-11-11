@@ -61,7 +61,7 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
  * TODO: A CUDA implementation
  */
 void cuda_nbody_all_pairs::calculate_forces() {
-    /* First calculate force for particles. */
+    /* First calculate force for particle_soa. */
     cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
     uint count = number_particles * sizeof(particle_t);
     cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);

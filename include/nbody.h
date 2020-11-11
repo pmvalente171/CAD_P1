@@ -37,7 +37,7 @@ namespace cadlabs {
 
         /**
          * Create an NBody simulation
-         * @param number_particles  Number of particles
+         * @param number_particles  Number of particle_soa
          * @param t_final simulation end time
          * @param universe universe type
          * @param universe_seed Seed for the creation of the universe (if needed). Default 0 (no seed)
@@ -52,19 +52,19 @@ namespace cadlabs {
         void run_simulation();
 
         /**
-         * Reset the particles to their original positions
+         * Reset the particle_soa to their original positions
          */
         void reset();
 
         /**
-         * Print the final position of the particles in a given output stream
+         * Print the final position of the particle_soa in a given output stream
          * @param out the output stream
          */
         void print_all_particles(std::ostream &out);
 
 
         /**
-         * Number of particles
+         * Number of particle_soa
          */
         const int number_particles;
 
@@ -92,7 +92,16 @@ namespace cadlabs {
 
         void compute_force(particle_t *p, double x_pos, double y_pos, double mass);
 
+        void compute_force(float * const x_pos, float * const y_pos,
+                           float * const x_force, float * const y_force, float *const mass,
+                           float other_x_pos, float other_y_pos, float other_mass);
+
         void move_particle(particle_t *p, double step);
+
+        void move_particle(float *x_pos, float *y_pos,
+                           float *x_vel, float *y_vel,
+                           float *x_force, float *y_force,
+                           float *mass, double step);
 
         void all_init_particles();
 
@@ -101,10 +110,16 @@ namespace cadlabs {
         virtual void calculate_forces();
 
         /**
-         * The array of particles
+         * The array of particles (aos)
          */
         particle_t *particles;
 
+#ifdef SOA
+        /**
+         * The structure of arrays (soa)
+         */
+        particle_soa particles_soa = particle_soa();
+#endif
         /**
          * The debug class
          */

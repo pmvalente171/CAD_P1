@@ -32,7 +32,7 @@ namespace cadlabs {
 
         all_init_particles();
 #ifdef DISPLAY
-        /* Open an X window to display the particles */
+        /* Open an X window to display the particle_soa */
         simple_init (100,100, DISPLAY_SIZE, DISPLAY_SIZE);
 #endif
 #ifdef DEBUG
@@ -50,7 +50,7 @@ namespace cadlabs {
         printf("Hit return to close the window.");
 
         getchar();
-        /* Close the X window used to display the particles */
+        /* Close the X window used to display the particle_soa */
         XCloseDisplay(theDisplay);
 #endif
 #ifdef DEBUG
@@ -62,7 +62,8 @@ namespace cadlabs {
         all_init_particles();
     }
 
-/* compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
+/*
+ * compute the force that a particle with position (x_pos, y_pos) and mass 'mass'
  * applies to particle p
  */
     void nbody::compute_force(particle_t *p, double x_pos, double y_pos, double mass) {
@@ -77,6 +78,28 @@ namespace cadlabs {
 
         p->x_force += grav_base * x_sep;
         p->y_force += grav_base * y_sep;
+    }
+
+/*
+ *  Like the method above this function calculates the force between two particles
+ *  but does this for an SOA organization of the data
+ */
+    void nbody::compute_force(
+            float * const x_pos, float * const y_pos,
+            float * const x_force, float * const y_force, float *const mass,
+            float other_x_pos, float other_y_pos, float other_mass) {
+
+        float x_sep, y_sep, dist_sq, grav_base;
+
+        x_sep = other_x_pos - *x_pos;
+        y_sep = other_y_pos - *y_pos;
+        dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
+
+        /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
+        grav_base = GRAV_CONSTANT * (*mass) * (*mass) / dist_sq;
+
+        *x_force += grav_base * x_sep;
+        *y_force += grav_base * y_sep;
     }
 
 /* compute the new position/velocity */
@@ -102,13 +125,13 @@ namespace cadlabs {
 
 
 /*
-  Move particles one time step.
+  Move particle_soa one time step.
   Update positions, velocity, and acceleration.
   Return local computations.
 */
 
     void nbody::calculate_forces()  {
-        /* First calculate force for particles. */
+        /* First calculate force for particle_soa. */
 
         for (int i = 0; i < number_particles; i++) {
 
@@ -124,7 +147,7 @@ namespace cadlabs {
 
     void nbody::move_all_particles(double step) {
 
-        /* then move all particles and return statistics */
+        /* then move all particle_soa and return statistics */
         for (int i = 0; i < number_particles; i++) {
             move_particle(&particles[i], step);
         }
@@ -136,20 +159,20 @@ namespace cadlabs {
     }
 
 
-/* display all the particles */
+/* display all the particle_soa */
     void nbody::draw_all_particles() {
 #ifdef DISPLAY
         int i;
         for(i=0; i<number_particles; i++) {
-          int x = POS_TO_SCREEN(particles[i].x_pos);
-          int y = POS_TO_SCREEN(particles[i].y_pos);
+          int x = POS_TO_SCREEN(particle_soa[i].x_pos);
+          int y = POS_TO_SCREEN(particle_soa[i].y_pos);
           draw_point (x,y);
         }
 #endif
     }
 
 /*
-  Place particles in their initial positions.
+  Place particle_soa in their initial positions.
 */
 
     void nbody::all_init_particles() {
@@ -182,7 +205,7 @@ namespace cadlabs {
         while (t < T_FINAL && number_particles > 0) {
             /* Update time. */
             t += dt;
-            /* Move particles with the current and compute rms velocity. */
+            /* Move particle_soa with the current and compute rms velocity. */
             all_move_particles(dt);
 
             /*
@@ -202,7 +225,7 @@ namespace cadlabs {
         }
 
 #ifdef DEBUG
-        debug->save_values_by_iteration(particles, number_particles);
+        debug->save_values_by_iteration(particle_soa, number_particles);
 #endif
     }
 }

@@ -46,7 +46,6 @@ namespace cadlabs {
             float *x_vel, float *y_vel) {
 
         double total_particle = num_particles;
-
         for (int i = 0; i < num_particles; i++) {
 #if 0
             x_pos[i] = ((rand() % max_resolution)- (max_resolution/2))*2.0 / max_resolution;
@@ -59,10 +58,7 @@ namespace cadlabs {
             x_vel[i] = 0.0;
             y_vel[i] = x_pos[i];
 #endif
-
-            particle->mass = 1.0 + (num_particles + i) / total_particle;
-            particle->node = NULL;
-            //insert_particle(particle, root);
+            mass[i] = 1.0 + (num_particles + i) / total_particle;
         }
     }
 
