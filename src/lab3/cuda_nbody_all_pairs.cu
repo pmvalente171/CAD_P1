@@ -3,6 +3,7 @@
  */
 
 #include <nbody/cuda_nbody_all_pairs.h>
+#include "stdio.h"
 
 static constexpr int thread_block_size = 256;
 
@@ -52,6 +53,7 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
     __shared__ particle_t forceParticles[thread_block_size];
     int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
     int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
+    printf("Entered kernel with particle: (%d,%d)\n", targetParticle, forceEffectParticle);
     if (targetParticle < number_particles && forceEffectParticle < number_particles) {
         /*
          * The particle's forces are set to 0 several times (the y dimension of the blocks)
@@ -102,6 +104,7 @@ void cuda_nbody_all_pairs::calculate_forces() {
     cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
     dim3 grid(number_blocks, number_blocks, 1);
     dim3 block(thread_block_size, thread_block_size, 1);
+    printf("Entering kernel from device\n Num blocks: %d\n Threads per block: %d\n", number_blocks, thread_block_size);
     two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles);
     cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
     cudaFree(gpu_particles);
