@@ -36,8 +36,8 @@ namespace cadlabs {
         simple_init (100,100, DISPLAY_SIZE, DISPLAY_SIZE);
 #endif
 #ifdef DEBUG
-        // TODO: Maybe change this?
         debug = new get_output(file_name);
+        // TODO: Maybe change this?
 #endif
     }
 
