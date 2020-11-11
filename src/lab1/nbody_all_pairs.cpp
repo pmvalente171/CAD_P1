@@ -70,7 +70,7 @@ namespace cadlabs {
 
         x_sep = x_pos - p->x_pos;
         y_sep = y_pos - p->y_pos;
-        dist_sq = MAX((x_sep * x_sep) + (y_sep * y_asep), 0.01);
+        dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
 
         /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
         grav_base = GRAV_CONSTANT * (p->mass) * (mass) / dist_sq;
