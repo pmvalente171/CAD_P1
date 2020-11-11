@@ -90,18 +90,18 @@ namespace cadlabs {
 
         void draw_all_particles();
 
-        void compute_force(particle_t *p, double x_pos, double y_pos, double mass);
+        static void compute_force(particle_t *p, double x_pos, double y_pos, double mass);
 
-        void compute_force(float * const x_pos, float * const y_pos,
-                           float * const x_force, float * const y_force, float *const mass,
+        static void compute_force(const float * x_pos, const float * y_pos,
+                           float * x_force, float * y_force, const float *mass,
                            float other_x_pos, float other_y_pos, float other_mass);
 
-        void move_particle(particle_t *p, double step);
+        static void move_particle(particle_t *p, double step);
 
-        void move_particle(float *x_pos, float *y_pos,
-                           float *x_vel, float *y_vel,
-                           float *x_force, float *y_force,
-                           float *mass, double step);
+        static void move_particle(float * x_pos, float * y_pos,
+                           float * x_vel, float * y_vel,
+                           const float * x_force, const float * y_force,
+                           const float * mass, float step);
 
         void all_init_particles();
 

@@ -50,15 +50,15 @@ namespace cadlabs {
 #if 0
             x_pos[i] = ((rand() % max_resolution)- (max_resolution/2))*2.0 / max_resolution;
             y_pos[i] = ((rand() % max_resolution)- (max_resolution/2))*2.0 / max_resolution;
-            x_vel[i] = particle->y_pos;
-            y_vel[i] = particle->x_pos;
+            x_vel[i] = y_pos[i];
+            y_vel[i] = x_pos[i];
 #else
-            x_pos[i] = i * 2.0 / num_particles - 1.0;
+            x_pos[i] = (float)i * (float)(2.0 / num_particles) - 1.0f;
             y_pos[i] = 0.0;
             x_vel[i] = 0.0;
             y_vel[i] = x_pos[i];
 #endif
-            mass[i] = 1.0 + (num_particles + i) / total_particle;
+            mass[i] = (float)(1.0 + (num_particles + i) / total_particle);
         }
     }
 

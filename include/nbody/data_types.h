@@ -3,7 +3,6 @@
 //
 
 #define SOA
-#define AOS
 
 #ifndef CADLABS_GPU_DATA_TYPES_H
 #define CADLABS_GPU_DATA_TYPES_H
