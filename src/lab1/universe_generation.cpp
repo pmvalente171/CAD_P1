@@ -39,6 +39,33 @@ namespace cadlabs {
         }
     }
 
+    void original(
+            int num_particles,
+            float *mass,
+            float *x_pos, float *y_pos,
+            float *x_vel, float *y_vel) {
+
+        double total_particle = num_particles;
+
+        for (int i = 0; i < num_particles; i++) {
+#if 0
+            x_pos[i] = ((rand() % max_resolution)- (max_resolution/2))*2.0 / max_resolution;
+            y_pos[i] = ((rand() % max_resolution)- (max_resolution/2))*2.0 / max_resolution;
+            x_vel[i] = particle->y_pos;
+            y_vel[i] = particle->x_pos;
+#else
+            x_pos[i] = i * 2.0 / num_particles - 1.0;
+            y_pos[i] = 0.0;
+            x_vel[i] = 0.0;
+            y_vel[i] = x_pos[i];
+#endif
+
+            particle->mass = 1.0 + (num_particles + i) / total_particle;
+            particle->node = NULL;
+            //insert_particle(particle, root);
+        }
+    }
+
     void sphere(int num_particles, particle_t *particles) {
 
         int random = (rand() * num_particles);
@@ -65,6 +92,28 @@ namespace cadlabs {
         }
     }
 
+    void sphere(
+            int num_particles,
+            float *mass,
+            float *x_pos, float *y_pos) {
+
+        int random = (rand() * num_particles);
+        float o = 2 / (double) num_particles;
+        float increment = PI * (3.0 - sqrt(5));
+
+        int rbase = MAX(1, MIN(num_particles / 1000, 10));
+
+        for (int i = 0; i < num_particles; i++) {
+            float y = (((float)i * o) - 1) + (o / 2);
+            float r = sqrt( (float)rbase - pow(y, 2.0f));
+            float phi = (float)((i + random) % num_particles) * increment;
+
+            x_pos[i] = cos(phi) * r;
+            y_pos[i] = sin(phi) * r;
+
+            mass[i] = 1.0f + (num_particles + i) / num_particles;
+        }
+    }
 
     void rotating_disc(int num_particles, particle_t *particles) {
 
@@ -100,6 +149,38 @@ namespace cadlabs {
 
             particle->node = NULL;
             //  printf (" x %f y %f x %f y %f\n", x, y, particle->x_pos, particle->y_pos);
+        }
+    }
+
+    void rotating_disc(
+            int num_particles,
+            float *mass,
+            float *x_pos, float *y_pos,
+            float *x_vel, float *y_vel) {
+
+        static const float RADIUS_OFFSET = 0.05f;
+        static const float velocityMultiplier = 1.3;
+        static const int radius = 5;
+
+        mass[0] = 1.0;
+        x_pos[0] = 0;
+        y_pos[0] = 0;
+        x_vel[0] = 1;
+
+        for (int i = 0; i < num_particles; i++) {
+            double r = (float) ((rand() / RAND_MAX * radius) + RADIUS_OFFSET);
+            double alpha = rand() * 2 * PI;
+
+            x_pos[i] = (float) (cos(alpha) * r);
+            y_pos[i] = (float) (sin(alpha) * r);
+            mass[i] = 1.0f + (num_particles + i) / num_particles;
+
+            // orbital velocity
+            float v0 = (float) sqrt((1 + mass[i]) / (r * r * r)) * velocityMultiplier;
+
+            // rotate by 90°
+            x_vel[i] = y_pos[i] * v0;
+            y_vel[i] = -x_pos[i] * v0;
         }
     }
 }

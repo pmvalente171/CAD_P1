@@ -2,6 +2,9 @@
 // Created by pm_valente on 08/11/20.
 //
 
+#define SOA
+#define AOS
+
 #ifndef CADLABS_GPU_DATA_TYPES_H
 #define CADLABS_GPU_DATA_TYPES_H
 
@@ -27,10 +30,11 @@ namespace data_types{
     //  to help out with this
     //  structs
     struct particles {
-
+        float *x_pos, *y_pos;
+        float *x_vel, *y_vel;
+        float *x_force, *y_force;
+        float *mass;
     };
-
-    // A method for adding a value to a particle
 
 
     /* Only used in the barnes-Hut algorithm */
