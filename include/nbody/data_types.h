@@ -16,7 +16,7 @@ namespace data_types{
     struct particle_t {
         double x_pos, y_pos;        /* position of the particle */
         double x_vel, y_vel;        /* velocity of the particle */
-        double x_force, y_force;    /* gravitational forces that apply against this particle */
+        float x_force, y_force;    /* gravitational forces that apply against this particle */
         double mass;            /* mass of the particle */
         node_t *node;        /* only used for the barnes-hut algorithm */
     };

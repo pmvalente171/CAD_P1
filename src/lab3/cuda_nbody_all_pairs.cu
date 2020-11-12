@@ -3,9 +3,10 @@
  */
 
 #include <nbody/cuda_nbody_all_pairs.h>
+#include <omp.h>
 #include "stdio.h"
 
-static constexpr int thread_block_size = 256;
+static constexpr int thread_block_size = 32;
 
 namespace cadlabs {
 
@@ -53,25 +54,25 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
     __shared__ particle_t forceParticles[thread_block_size];
     int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
     int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
-    printf("Entered kernel with particle: (%d,%d)\n", targetParticle, forceEffectParticle);
     if (targetParticle < number_particles && forceEffectParticle < number_particles) {
         /*
-         * The particle's forces are set to 0 several times (the y dimension of the blocks)
-         *  this is necessary because the synchronization is only within a block, and all blocks must
-         *  view the forces initially as 0. Setting a value to 0 is concurrency free.
          * Only a single thread per particle per block caches the target particle to local memory
          */
-        if (!threadIdx.y) {
-            particle_t *p = &particles[targetParticle];
-            p->x_force = 0;
-            p->y_force = 0;
+        if (!threadIdx.y)
             targetParticles[threadIdx.x] = particles[targetParticle];
-        }
-        __syncthreads();
-
         if (!threadIdx.x)
             forceParticles[threadIdx.y] = particles[forceEffectParticle];
+
         __syncthreads();
+
+        //if (!threadIdx.x && !threadIdx.y)
+        //    printf("Here\n");
+            /*for(int i = 0; i < number_particles; i++)
+                printf("forces: (%f, %f)\n"
+                       "thread: (%d, %d)\n",
+                       targetParticles[i].x_force, targetParticles[i].y_force,
+                       targetParticle, forceEffectParticle);
+*/
 
         particle_t *tp = &targetParticles[threadIdx.x];
         particle_t *fp = &forceParticles[threadIdx.y];
@@ -80,15 +81,16 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
         y_sep = fp->y_pos - tp->y_pos;
         dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
         grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
-        double forceIncreaseX = grav_base * x_sep;
-        double forceIncreaseY = grav_base * y_sep;
-        atomicAdd(((float *) &(tp->x_force)), ((float)forceIncreaseX));
-        atomicAdd(((float *)&(tp->y_force)), ((float)forceIncreaseY));
+        float forceIncreaseX = grav_base * x_sep;
+        float forceIncreaseY = grav_base * y_sep;
+        atomicAdd(&(tp->x_force), forceIncreaseX);
+        atomicAdd(&(tp->y_force), forceIncreaseY);
+
         __syncthreads();
 
         if (!threadIdx.y) {
-            atomicAdd(((float *)&(particles[targetParticle].x_force)), ((float)tp->x_force));
-            atomicAdd(((float *)&(particles[targetParticle].y_force)), ((float)tp->y_force));
+            atomicAdd(&(particles[targetParticle].x_force), tp->x_force);
+            atomicAdd(&(particles[targetParticle].y_force), tp->y_force);
         }
     }
 }
@@ -98,13 +100,27 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
  * TODO: A CUDA implementation
  */
 void cuda_nbody_all_pairs::calculate_forces() {
-    /* First calculate force for particles. */
     cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
     uint count = number_particles * sizeof(particle_t);
+
+    /*
+     * Setting the forces to 0 within a kernel would require the synchronization of all blocks
+     * An alternative solution to using the host would be to launch a kernel specifically to
+     *  set the forces to 0. However, the number of particles will either not be high enough to warrant
+     *  launching a kernel, or will be so high that the time to compute the forces between the
+     *  particles completely eclipses the time required to set the forces to 0.
+     */
+    #pragma omp parallel for num_threads(number_of_threads)
+    for(int i = 0; i < number_particles; i++) {
+        particle_t* p = &particles[i];
+        p->x_force = 0;
+        p->y_force = 0;
+    }
+
     cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
-    dim3 grid(number_blocks, number_blocks, 1);
-    dim3 block(thread_block_size, thread_block_size, 1);
-    printf("Entering kernel from device\n Num blocks: %d\n Threads per block: %d\n", number_blocks, thread_block_size);
+    dim3 grid(number_blocks, number_blocks);
+    dim3 block(thread_block_size, thread_block_size);
+    printf("number blocks: %d\n", number_blocks);
     two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles);
     cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
     cudaFree(gpu_particles);
