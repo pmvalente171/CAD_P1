@@ -50,8 +50,8 @@ cuda_nbody_all_pairs::~cuda_nbody_all_pairs() {
 }*/
 
 __global__ void two_cycles_parallel(particle_t* particles, const unsigned number_particles) {
-    __shared__ particle_t targetParticles[thread_block_size];
-    __shared__ particle_t forceParticles[thread_block_size];
+    //__shared__ particle_t targetParticles[thread_block_size];
+    //__shared__ particle_t forceParticles[thread_block_size];
     int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
     int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
     if (targetParticle < number_particles && forceEffectParticle < number_particles) {
@@ -61,7 +61,7 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
          *  entering the kernel with 0 forces being applied, blocks other than this may have applied
          *  some forces
          */
-        if (!threadIdx.y) {
+        /*if (!threadIdx.y) {
             //targetParticles[threadIdx.x] = particles[targetParticle];
             particle_t p = particles[targetParticle];
             particle_t temp;
@@ -80,7 +80,7 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
         /*
          * Same comment for this block of code
          */
-        if (!threadIdx.x) {
+        /*if (!threadIdx.x) {
             //forceParticles[threadIdx.y] = particles[forceEffectParticle];
             particle_t p = particles[forceEffectParticle];
             particle_t temp;
@@ -98,7 +98,7 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
          * All threads in a have to access each of the local arrays
          *  as such, these must be filled.
          */
-         __syncthreads();
+         //__syncthreads();
 
         /*if (!threadIdx.x && !threadIdx.y)
             //    printf("Here\n");
@@ -109,15 +109,18 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
                        targetParticle, forceEffectParticle);
         __syncthreads();*/
 
-        particle_t *tp = &targetParticles[threadIdx.x];
-        particle_t *fp = &forceParticles[threadIdx.y];
+        /*particle_t *tp = &targetParticles[threadIdx.x];
+        particle_t *fp = &forceParticles[threadIdx.y];*/
+
+        particle_t *tp = &particles[targetParticle];
+        particle_t *fp = &particles[forceEffectParticle];
 
         double x_sep = fp->x_pos - tp->x_pos;
         double y_sep = fp->y_pos - tp->y_pos;
         //printf("displacement: (%f, %f)\n", x_sep, y_sep);
         double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
         //printf("distSq: %f\n", dist_sq);
-        double grav_base = GRAV_CONSTANT; //* (fp->mass) * (tp->mass) / dist_sq;
+        double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
         //printf("Mass particles: %f, %f  \n", fp->mass, tp->mass);
         //printf("grav: %f\n", grav_base);
         float forceIncreaseX = grav_base * x_sep;
@@ -133,7 +136,7 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
         atomicAdd(&(tp->x_force), forceIncreaseX);
         atomicAdd(&(tp->y_force), forceIncreaseY);
 
-        __syncthreads();
+        //__syncthreads();
 
        /* if (!threadIdx.x && !threadIdx.y)
             //    printf("Here\n");
@@ -148,10 +151,10 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
          * Upon having computed the total forces applied to a particle in this block
          *  these are added to the global view of the particle.
          */
-        if (!threadIdx.y) {
+        /*if (!threadIdx.y) {
             atomicAdd(&(particles[targetParticle].x_force), tp->x_force);
             atomicAdd(&(particles[targetParticle].y_force), tp->y_force);
-        }
+        }*/
     }
 }
 
@@ -170,7 +173,7 @@ void cuda_nbody_all_pairs::calculate_forces() {
      *  launching a kernel, or will be so high that the time to compute the forces between the
      *  particles completely eclipses the time required to set the forces to 0.
      */
-    //#pragma omp parallel for num_threads(number_of_threads)
+    #pragma omp parallel for num_threads(number_of_threads)
     for(int i = 0; i < number_particles; i++) {
         particle_t* p = &particles[i];
         p->x_force = 0;
