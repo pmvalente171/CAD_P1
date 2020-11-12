@@ -13,7 +13,8 @@ namespace cadlabs {
 
 #define DISPLAY_SIZE       512      /* pixel size of display window */
 #define SCALE               0.03    /* sets the magnification at the origin */
-    /* smaller #'s zoom in */
+
+/* smaller #'s zoom in */
 #define XMIN (-1/SCALE)
 #define XMAX (1/SCALE)
 #define YMIN (-1/SCALE)
@@ -92,16 +93,16 @@ namespace cadlabs {
 
         static void compute_force(particle_t *p, double x_pos, double y_pos, double mass);
 
-        static void compute_force(const float * x_pos, const float * y_pos,
-                           float * x_force, float * y_force, const float *mass,
-                           float other_x_pos, float other_y_pos, float other_mass);
+        static void compute_force(const double * x_pos, const double * y_pos,
+                                  double * x_force, double * y_force, const double *mass,
+                                  double other_x_pos, double other_y_pos, double other_mass);
 
         static void move_particle(particle_t *p, double step);
 
-        static void move_particle(float * x_pos, float * y_pos,
-                           float * x_vel, float * y_vel,
-                           const float * x_force, const float * y_force,
-                           const float * mass, float step);
+        static void move_particle(double * x_pos, double * y_pos,
+                                  double * x_vel, double * y_vel,
+                                  const double * x_force, const double * y_force,
+                                  const double * mass, double step);
 
         void all_init_particles();
 

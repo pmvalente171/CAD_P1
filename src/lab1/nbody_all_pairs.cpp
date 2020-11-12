@@ -31,16 +31,16 @@ namespace cadlabs {
             particles(static_cast<particle_t *>(malloc(sizeof(particle_t) * number_particles))) {
 
 #ifdef SOA
-        particles_soa.x_pos = static_cast<float *>(malloc(sizeof(float) * number_particles));
-        particles_soa.y_pos = static_cast<float *>(malloc(sizeof(float) * number_particles));
+        particles_soa.x_pos = static_cast<double *>(malloc(sizeof(double) * number_particles));
+        particles_soa.y_pos = static_cast<double *>(malloc(sizeof(double) * number_particles));
 
-        particles_soa.x_vel = static_cast<float *>(malloc(sizeof(float) * number_particles));
-        particles_soa.y_vel = static_cast<float *>(malloc(sizeof(float) * number_particles));
+        particles_soa.x_vel = static_cast<double *>(malloc(sizeof(double) * number_particles));
+        particles_soa.y_vel = static_cast<double *>(malloc(sizeof(double) * number_particles));
 
-        particles_soa.x_force = static_cast<float *>(malloc(sizeof(float) * number_particles));
-        particles_soa.y_force = static_cast<float *>(malloc(sizeof(float) * number_particles));
+        particles_soa.x_force = static_cast<double *>(malloc(sizeof(double) * number_particles));
+        particles_soa.y_force = static_cast<double *>(malloc(sizeof(double) * number_particles));
 
-        particles_soa.mass = static_cast<float *>(malloc(sizeof(float) * number_particles));
+        particles_soa.mass = static_cast<double *>(malloc(sizeof(double) * number_particles));
 #endif
         all_init_particles();
 
@@ -68,6 +68,18 @@ namespace cadlabs {
 #endif
 #ifdef DEBUG
         debug->~get_output();
+#endif
+        free(particles);
+#ifdef SOA
+        free(particles_soa.mass);
+
+        free(particles_soa.x_pos);
+        free(particles_soa.x_vel);
+        free(particles_soa.x_force);
+
+        free(particles_soa.y_pos);
+        free(particles_soa.y_vel);
+        free(particles_soa.y_force);
 #endif
     }
 
@@ -102,11 +114,11 @@ namespace cadlabs {
  *  organization of the data
  */
     void nbody::compute_force(
-            const float * const x_pos, const float * const y_pos,
-            float * const x_force, float * const y_force, const float *const mass,
-            float other_x_pos, float other_y_pos, float other_mass) {
+            const double * const x_pos, const double * const y_pos,
+            double * const x_force, double * const y_force, const double *const mass,
+            double other_x_pos, double other_y_pos, double other_mass) {
 
-        float x_sep, y_sep, dist_sq, grav_base;
+        double x_sep, y_sep, dist_sq, grav_base;
 
         x_sep = other_x_pos - *x_pos;
         y_sep = other_y_pos - *y_pos;
@@ -148,25 +160,25 @@ namespace cadlabs {
  * position/velocity
  */
     void nbody::move_particle(
-            float * const x_pos, float * const y_pos,
-            float * const x_vel, float * const y_vel,
-            const float * const x_force, const float * const y_force,
-            const float * const mass, float step) {
+            double * const x_pos, double * const y_pos,
+            double * const x_vel, double * const y_vel,
+            const double * const x_force, const double * const y_force,
+            const double * const mass, double step) {
 
         *x_pos += (*x_vel) * step;
         *y_pos += (*y_vel) * step;
 
-        float x_acc = *x_force / *mass;
-        float y_acc = *y_force / *mass;
+        double x_acc = *x_force / *mass;
+        double y_acc = *y_force / *mass;
 
         *x_vel += x_acc * step;
         *y_vel += y_acc * step;
 
         /* compute statistics */
-        float cur_acc = (x_acc * x_acc + y_acc * y_acc);
+        double cur_acc = (x_acc * x_acc + y_acc * y_acc);
         cur_acc = sqrt(cur_acc);
-        float speed_sq = (*x_vel) * (*x_vel) + (*y_vel) * (*y_vel);
-        float cur_speed = sqrt(speed_sq);
+        double speed_sq = (*x_vel) * (*x_vel) + (*y_vel) * (*y_vel);
+        double cur_speed = sqrt(speed_sq);
 
         sum_speed_sq += speed_sq;
         max_acc = MAX(max_acc, cur_acc);
@@ -182,15 +194,27 @@ namespace cadlabs {
     void nbody::calculate_forces() {
         /* First calculate force for particle_soa. */
 
+        double *x_pos = particles_soa.x_pos, *y_pos = particles_soa.y_pos;
+        double *x_vel = particles_soa.x_vel, *y_vel = particles_soa.y_vel;
+        double *x_force = particles_soa.x_force, *y_force = particles_soa.y_force;
+        double *mass = particles_soa.mass;
+
         for (int i = 0; i < number_particles; i++) {
 
-            particles_soa.x_force[i] = 0;
-            particles_soa.y_force[i] = 0;
+            x_force[i] = 0;
+            y_force[i] = 0;
             for (int j = 0; j < number_particles; j++) {
-                /* compute the force of particle j on particle i */
-                compute_force(&particles_soa.x_pos[i], &particles_soa.y_pos[i],
-                              &particles_soa.x_force[i], &particles_soa.y_force[i],&particles_soa.mass[i],
-                              particles_soa.x_pos[j], particles_soa.y_pos[j], particles_soa.mass[j]);
+                double x_sep, y_sep, dist_sq, grav_base;
+
+                x_sep = x_pos[j] - x_pos[i];
+                y_sep = y_pos[j] - y_pos[i];
+                dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
+
+                // Use the 2-dimensional gravity rule: F = d * (GMm/d^2)
+                grav_base = GRAV_CONSTANT * (mass[i]) * (mass[j]) / dist_sq;
+
+                x_force[i] += grav_base * x_sep;
+                y_force[i] += grav_base * y_sep;
             }
         }
     }
@@ -219,12 +243,32 @@ namespace cadlabs {
  */
     void nbody::move_all_particles(double step) {
 
+        double *x_pos = particles_soa.x_pos, *y_pos = particles_soa.y_pos;
+        double *x_vel = particles_soa.x_vel, *y_vel = particles_soa.y_vel;
+        double *x_force = particles_soa.x_force, *y_force = particles_soa.y_force;
+        double *mass = particles_soa.mass;
+
     /* then move all particle_soa and return statistics */
         for (int i = 0; i < number_particles; i++) {
-            move_particle(&particles_soa.x_pos[i], &particles_soa.y_pos[i],
-                          &particles_soa.x_vel[i], &particles_soa.y_vel[i],
-                          &particles_soa.x_force[i], &particles_soa.y_force[i],
-                          &particles_soa.mass[i], (float)step);
+            x_pos[i] += (x_vel[i]) * step;
+            y_pos[i] += (y_vel[i]) * step;
+
+            double x_acc = x_force[i] / mass[i];
+            double y_acc = y_force[i] / mass[i];
+
+            x_vel[i] += x_acc * step;
+            y_vel[i] += y_acc * step;
+
+            // compute statistics
+            double cur_acc = (x_acc * x_acc + y_acc * y_acc);
+            cur_acc = sqrt(cur_acc);
+            double speed_sq = (x_vel[i]) * (x_vel[i])
+                    + (y_vel[i]) * (y_vel[i]);
+            double cur_speed = sqrt(speed_sq);
+
+            sum_speed_sq += speed_sq;
+            max_acc = MAX(max_acc, cur_acc);
+            max_speed = MAX(max_speed, cur_speed);
         }
     }
 #else
@@ -317,14 +361,6 @@ namespace cadlabs {
 
             dt = 0.1 * max_speed / max_acc;
 
-#ifdef DEBUG
-#ifdef SOA
-            debug->save_values_by_iteration(particles_soa.x_pos, particles_soa.y_pos, number_particles);
-#else
-            debug->save_values_by_iteration(particles, number_particles);
-#endif
-#endif
-
             /* Plot the movement of the particle */
 #if DISPLAY
             clear_display();
@@ -332,7 +368,14 @@ namespace cadlabs {
             flush_display();
 #endif
         }
-
+#ifdef DEBUG
+#ifdef SOA
+        debug->save_values_by_iteration(particles_soa.x_pos, particles_soa.y_pos,
+                                        particles_soa.x_vel, particles_soa.y_vel, number_particles);
+#else
+        debug->save_values_by_iteration(particles, number_particles);
+#endif
+#endif
     }
 }
 

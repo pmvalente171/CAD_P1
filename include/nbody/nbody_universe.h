@@ -15,20 +15,20 @@ namespace cadlabs {
 
     void original(int num_particles, particle_t *particles);
 
-    void original(int num_particles, float *mass,
-                  float *x_pos, float *y_pos,
-                  float *x_vel, float *y_vel);
+    void original(int num_particles, double *mass,
+                  double *x_pos, double *y_pos,
+                  double *x_vel, double *y_vel);
 
     void rotating_disc(int num_particles, particle_t *particles);
 
-    void rotating_disc(int num_particles, float *mass,
-                       float *x_pos, float *y_pos,
-                       float *x_vel, float *y_vel);
+    void rotating_disc(int num_particles, double *mass,
+                       double *x_pos, double *y_pos,
+                       double *x_vel, double *y_vel);
 
     void sphere(int num_particles, particle_t *particles);
 
-    void sphere(int num_particles, float *mass,
-                float *x_pos, float *y_pos);
+    void sphere(int num_particles, double *mass,
+                double *x_pos, double *y_pos);
 }
 
 #endif	/* NBODY_UNIVERSE_H */
