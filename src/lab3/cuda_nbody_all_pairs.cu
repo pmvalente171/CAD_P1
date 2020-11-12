@@ -28,7 +28,7 @@ cuda_nbody_all_pairs::~cuda_nbody_all_pairs() {
 }
 
 
-__global__ void nbody_kernel(particle_t* particles, const unsigned number_particles) {
+/*__global__ void nbody_kernel(particle_t* particles, const unsigned number_particles) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < number_particles) {
         particle_t *pi = &particles[index];
@@ -37,17 +37,17 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
         for (int j = 0; j < number_particles; j++) {
             particle_t *pj = &particles[j];
             /* compute the force of particle j on particle i */
-            double x_sep, y_sep, dist_sq, grav_base;
+   /*         double x_sep, y_sep, dist_sq, grav_base;
             x_sep = pj->x_pos - pi->x_pos;
             y_sep = pj->y_pos - pi->y_pos;
             dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
             /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
-            grav_base = GRAV_CONSTANT * (pi->mass) * (pj->mass) / dist_sq;
+       /*     grav_base = GRAV_CONSTANT * (pi->mass) * (pj->mass) / dist_sq;
             pi->x_force += grav_base * x_sep;
             pi->y_force += grav_base * y_sep;
         }
     }
-}
+}*/
 
 __global__ void two_cycles_parallel(particle_t* particles, const unsigned number_particles) {
     __shared__ particle_t targetParticles[thread_block_size];
@@ -73,6 +73,8 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
             temp.x_force = 0;
             temp.y_force = 0;
             targetParticles[threadIdx.x] = temp;
+            //printf("tempPos: (%f, %f)\n", temp.x_pos, temp.y_pos);
+            //printf("tempMass: %f\n", temp.mass);
         }
 
         /*
@@ -89,7 +91,7 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
             temp.node = p.node;
             temp.x_force = 0;
             temp.y_force = 0;
-            targetParticles[threadIdx.x] = temp;
+            forceParticles[threadIdx.y] = temp;
         }
 
         /*
@@ -112,10 +114,15 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
 
         double x_sep = fp->x_pos - tp->x_pos;
         double y_sep = fp->y_pos - tp->y_pos;
+        //printf("displacement: (%f, %f)\n", x_sep, y_sep);
         double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
-        double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
+        //printf("distSq: %f\n", dist_sq);
+        double grav_base = GRAV_CONSTANT; //* (fp->mass) * (tp->mass) / dist_sq;
+        //printf("Mass particles: %f, %f  \n", fp->mass, tp->mass);
+        //printf("grav: %f\n", grav_base);
         float forceIncreaseX = grav_base * x_sep;
         float forceIncreaseY = grav_base * y_sep;
+        //printf("force increase: (%f, %f)\n", forceIncreaseX, forceIncreaseY);
 
         /*
          * After computing the forces applied from one particle, these are added to the
@@ -127,6 +134,15 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
         atomicAdd(&(tp->y_force), forceIncreaseY);
 
         __syncthreads();
+
+       /* if (!threadIdx.x && !threadIdx.y)
+            //    printf("Here\n");
+            for(int i = 0; i < number_particles; i++)
+                printf("forces: (%f, %f)\n"
+                       "thread: (%d, %d)\n",
+                       targetParticles[i].x_force, targetParticles[i].y_force,
+                       targetParticle, forceEffectParticle);
+        __syncthreads();*/
 
         /*
          * Upon having computed the total forces applied to a particle in this block
@@ -164,7 +180,7 @@ void cuda_nbody_all_pairs::calculate_forces() {
     cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
     dim3 grid(number_blocks, number_blocks);
     dim3 block(thread_block_size, thread_block_size);
-    printf("number blocks: %d\n", number_blocks);
+    //printf("number blocks: %d\n", number_blocks);
     two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles);
     cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
     cudaFree(gpu_particles);
