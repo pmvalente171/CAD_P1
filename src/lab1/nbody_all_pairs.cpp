@@ -198,12 +198,15 @@ namespace cadlabs {
         double *x_vel = particles_soa.x_vel, *y_vel = particles_soa.y_vel;
         double *x_force = particles_soa.x_force, *y_force = particles_soa.y_force;
         double *mass = particles_soa.mass;
+        int i=0, j=0;
 
-        for (int i = 0; i < number_particles; i++) {
-
+        for (i=0; i< number_particles; i++) {
             x_force[i] = 0;
             y_force[i] = 0;
-            for (int j = 0; j < number_particles; j++) {
+        }
+
+        for (i = 0; i < number_particles; i++) {
+            for (j = 0; j < number_particles; j++) {
                 double x_sep, y_sep, dist_sq, grav_base;
 
                 x_sep = x_pos[j] - x_pos[i];
