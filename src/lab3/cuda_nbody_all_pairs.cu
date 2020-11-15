@@ -7,6 +7,7 @@
 #include "stdio.h"
 
 static constexpr int thread_block_size = 32;
+static constexpr int WEIGHT = 3;
 
 namespace cadlabs {
 
@@ -29,16 +30,25 @@ cuda_nbody_all_pairs::~cuda_nbody_all_pairs() {
 
 __global__ void two_cycles_parallel(particle_t* particles, const unsigned number_particles) {
     int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
-    int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
-    if (targetParticle < number_particles && forceEffectParticle < number_particles) {
+    int baseEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
+    if (targetParticle < number_particles) {
         particle_t *tp = &particles[targetParticle];
-        particle_t *fp = &particles[forceEffectParticle];
-        double x_sep = fp->x_pos - tp->x_pos;
-        double y_sep = fp->y_pos - tp->y_pos;
-        double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
-        double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
-        atomicAdd(&(tp->x_force), grav_base * x_sep);
-        atomicAdd(&(tp->y_force), grav_base * y_sep);
+        float forceIncreaseX = 0, forceIncreaseY = 0;
+        int offset = number_particles / WEIGHT;
+        for (int i = 0; i < WEIGHT; i++) {          //TODO Inline For
+            int offsetEffectParticle = baseEffectParticle + i * offset;
+            if (offsetEffectParticle < number_particles) {
+                particle_t *fp = &particles[offsetEffectParticle];
+                double x_sep = fp->x_pos - tp->x_pos;
+                double y_sep = fp->y_pos - tp->y_pos;
+                double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
+                double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
+                forceIncreaseX += grav_base * x_sep;
+                forceIncreaseY += grav_base * y_sep;
+            }
+        }
+        atomicAdd(&(tp->x_force), forceIncreaseX);
+        atomicAdd(&(tp->y_force), forceIncreaseY);
     }
 }
 
@@ -64,7 +74,7 @@ void cuda_nbody_all_pairs::calculate_forces() {
     }
 
     cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
-    dim3 grid(number_blocks, number_blocks);
+    dim3 grid(number_blocks * WEIGHT, 1 + number_blocks / WEIGHT);
     dim3 block(thread_block_size, thread_block_size);
     two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles);
     cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
