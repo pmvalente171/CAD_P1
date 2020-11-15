@@ -4,7 +4,7 @@
 
 #include <nbody/cuda_nbody_all_pairs.h>
 
-static constexpr int thread_block_size = 512;
+static constexpr int thread_block_size = 256;
 
 namespace cadlabs {
 
@@ -85,30 +85,33 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
     }
 }
 
-__global__ void nbody_kernel_soa (const double *x_pos, const double *y_pos,
-                                  double *x_force, double *y_force,
-                                  const double *mass, const unsigned number_particles) {
+__global__ void nbody_kernel_soa (const double * __restrict__ x_pos, const double * __restrict__ y_pos,
+                                  double * __restrict__ x_force, double * __restrict__ y_force,
+                                  const double * __restrict__ mass, const unsigned number_particles) {
     unsigned index = blockIdx.x * blockDim.x + threadIdx.x;
+    double temp_x = 0.0, temp_y = 0.0, temp_mass;
 
     if(index < number_particles) {
         x_force[index] = 0;
         y_force[index] = 0;
+        temp_x = x_pos[index]; temp_y = y_pos[index];
+        temp_mass = mass[index];
+
         for (int j=0; j<number_particles; j++) {
             double x_sep, y_sep, dist_sq, grav_base;
 
-            x_sep = x_pos[j] - x_pos[index];
-            y_sep = y_pos[j] - y_pos[index];
+            x_sep = x_pos[j] - temp_x;
+            y_sep = y_pos[j] - temp_y;
             dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
 
             /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
-            grav_base = GRAV_CONSTANT * (mass[index]) * (mass[j]) / dist_sq;
+            grav_base = GRAV_CONSTANT * (temp_mass) * (mass[j]) / dist_sq;
 
             x_force[index] += grav_base * x_sep;
             y_force[index] += grav_base * y_sep;
         }
     }
 }
-
 
 /**
  * TODO: A CUDA implementation

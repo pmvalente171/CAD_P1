@@ -2,3 +2,5 @@ cmake-build-debug
 
 #CLION deplyoment stuff
 .idea/*
+
+cmake-build-release/
