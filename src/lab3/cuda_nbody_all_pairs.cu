@@ -41,15 +41,9 @@ namespace cadlabs {
              */
             if (!threadIdx.y) {
                 particle_t p = gParticles[targetParticle];
-                particle_t temp;
-                temp.x_pos = p.x_pos;
-                temp.y_pos = p.y_pos;
-                temp.x_vel = p.x_vel;
-                temp.mass = p.mass;
-                temp.node = p.node;
-                temp.x_force = 0;
-                temp.y_force = 0;
-                sParticles[threadIdx.x] = temp;
+                p.x_force = 0;
+                p.y_force = 0;
+                sParticles[threadIdx.x] = p;
             }
 
             /*
@@ -58,22 +52,22 @@ namespace cadlabs {
              */
             __syncthreads();
 
-            particle_t *tp = &sParticles[threadIdx.x];
             particle_t *fp = &gParticles[forceEffectParticle];
+            particle_t *tp = &sParticles[threadIdx.x];
 
             double x_sep = fp->x_pos - tp->x_pos;
             double y_sep = fp->y_pos - tp->y_pos;
             double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
             double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
-            float forceIncreaseX = grav_base * x_sep;
-            float forceIncreaseY = grav_base * y_sep;
 
             /*
              * After computing the forces applied from one particle, these are added to the
              *  value on a local array.
              */
-            atomicAdd(&(tp->x_force), forceIncreaseX);
-            atomicAdd(&(tp->y_force), forceIncreaseY);
+            atomicAdd(&(tp->x_force), ((float)grav_base * x_sep));
+            atomicAdd(&(tp->y_force), ((float)grav_base * y_sep));
+
+            __syncthreads();
 
             /*
              * Upon having computed the total forces applied to a particle in this block
@@ -100,7 +94,7 @@ namespace cadlabs {
          *  launching a kernel, or will be so high that the time to compute the forces between the
          *  particles completely eclipses the time required to set the forces to 0.
          */
-#pragma omp parallel for num_threads(number_of_threads)
+        #pragma omp parallel for num_threads(number_of_threads)
         for(int i = 0; i < number_particles; i++) {
             particle_t* p = &particles[i];
             p->x_force = 0;
