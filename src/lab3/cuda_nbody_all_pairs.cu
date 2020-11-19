@@ -5,6 +5,7 @@
 #include <nbody/cuda_nbody_all_pairs.h>
 
 static constexpr int thread_block_size = 256;
+static constexpr int n_stream = 5;
 
 namespace cadlabs {
 
@@ -122,6 +123,12 @@ __global__ void nbody_kernel_soa (const double * __restrict__ x_pos, const doubl
 
 #ifdef SOA
 void cuda_nbody_all_pairs::calculate_forces() {
+    // cudaStream_t streams[n_stream];
+
+    // for (auto & stream : streams) {
+    //     cudaStreamCreate(&stream);
+    // }
+
     uint count = number_particles * sizeof(double);
     cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, count, cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, count, cudaMemcpyHostToDevice);
