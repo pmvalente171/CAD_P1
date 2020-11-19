@@ -99,7 +99,7 @@ namespace cadlabs {
 
         dim3 grid(gridWidth, gridHeight);
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
-        calculate_forces<<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles);
+        ::cadlabs::calculate_forces<<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles);
 
         cudaMemcpy(particles, gpu_particles, size, cudaMemcpyDeviceToHost);
     }
