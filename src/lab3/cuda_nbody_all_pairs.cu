@@ -6,8 +6,8 @@
 #include <omp.h>
 #include <stdio.h>
 
-static constexpr int BLOCK_WIDTH  = 256;
-static constexpr int BLOCK_HEIGHT = 2;
+static constexpr int BLOCK_WIDTH  = 16;
+static constexpr int BLOCK_HEIGHT = 16;
 
 static constexpr int thread_block_size = 512;
 
@@ -48,6 +48,9 @@ namespace cadlabs {
         int forceParticle  = blockIdx.x * blockDim.x + threadIdx.x;
         int targetParticle = blockIdx.y * blockDim.y + threadIdx.y;
 
+        sForcesX[threadIdx.y * blockDim.x + threadIdx.x] = 0.0;
+        sForcesY[threadIdx.y * blockDim.x + threadIdx.x] = 0.0;
+
         if (forceParticle < number_particles && targetParticle < number_particles) {
 
             /*
@@ -84,12 +87,14 @@ namespace cadlabs {
                     //printf("ThreadIdx.x %d\n", threadIdx.x);
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    // printf("Thread : X:%d; Y:%d; ;Write position : %d ; Read position : %d\n", threadIdx.x, threadIdx.y, threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + s);
                     //printf("sForcesX[%d] += sForces[%d]\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + s);
                     //printf("Result: sForcesX[%d] = %f\n", threadIdx.y * blockDim.x + threadIdx.x, sForcesX[threadIdx.y * blockDim.x + threadIdx.x]);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
                 }
                 __syncthreads();
+                // if (threadIdx.x == 0 && threadIdx.y == 0) printf("oof blockId : %d; %d ||| S : %d \n", blockIdx.x, blockIdx.y, s);
             }
 
             //printf ("Thread(%d, %d) placed %f in sForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
@@ -107,6 +112,7 @@ namespace cadlabs {
         cudaMemcpy(gpu_particles, particles, size, cudaMemcpyHostToDevice);
 
         dim3 grid(gridWidth, gridHeight);
+        // printf("grid dims: %d, %d\n", gridWidth, gridHeight);
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
         ::cadlabs::calculate_forces<<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
         //printf("\n\n");
@@ -114,8 +120,14 @@ namespace cadlabs {
         cudaMemcpy(hForcesX, dForcesX, gridHeight * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(hForcesY, dForcesY, gridHeight * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
 
-        /*for (int i = 0; i < gridWidth; i++)
-            printf("hForcesX[%d] = %f\n", i, hForcesX[i]);*/
+        /*for (int i = 0; i < number_particles; i++) {
+            int targetParticle = i * gridWidth;
+            double xF = 0; double yF = 0;
+            for (int j = 0; j < gridWidth; j++) {
+                printf("Particle forces : %.3f ; %.3f\n", hForcesX[targetParticle + j],
+                       hForcesY[targetParticle + j]);
+            }
+        }*/
 
         for (int i = 0; i < number_particles; i++) {
             int targetParticle = i * gridWidth;
