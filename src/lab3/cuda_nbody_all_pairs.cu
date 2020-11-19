@@ -4,7 +4,7 @@
 
 #include <nbody/cuda_nbody_all_pairs.h>
 #include <omp.h>
-#include "stdio.h"
+#include <stdio.h>
 
 static constexpr int BLOCK_WIDTH  = 256;
 static constexpr int BLOCK_HEIGHT = 2;
@@ -23,38 +23,27 @@ namespace cadlabs {
             nbody(number_particles, t_final, universe, universe_seed, file_name),
             number_blocks ((number_particles + thread_block_size - 1)/thread_block_size)  {
         cudaMalloc(&gpu_particles, number_particles*sizeof(particle_t));
-        gridWidth  = number_particles / BLOCK_WIDTH + (number_particles % BLOCK_WIDTH == 0);
-        gridHeight = number_particles / BLOCK_HEIGHT + (number_particles % BLOCK_HEIGHT == 0);
-        hForcesX = (float **)malloc(gridHeight * sizeof(float *));
-        hForcesY = (float **)malloc(gridHeight * sizeof(float *));
-        cudaMalloc(&dForcesX, gridHeight * sizeof(float *));
-        cudaMalloc(&dForcesY, gridHeight * sizeof(float *));
-        for (int i = 0; i < gridHeight; i++) {
-            hForcesX[i] = (float *) malloc(gridWidth * sizeof(float));
-            hForcesY[i] = (float *) malloc(gridWidth * sizeof(float));
-            cudaMalloc(&dForcesX[i], gridWidth * sizeof(float));
-            cudaMalloc(&dForcesY[i], gridWidth * sizeof(float));
-        }
+        gridWidth  = number_particles / BLOCK_WIDTH + (number_particles % BLOCK_WIDTH != 0);
+        gridHeight = number_particles / BLOCK_HEIGHT + (number_particles % BLOCK_HEIGHT != 0);
+        hForcesX = (double *)malloc(number_particles * gridWidth * sizeof(double));
+        hForcesY = (double *)malloc(number_particles * gridWidth * sizeof(double));
+        cudaMalloc(&dForcesX, number_particles * gridWidth * sizeof(double));
+        cudaMalloc(&dForcesY, number_particles * gridWidth * sizeof(double));
     }
 
     cuda_nbody_all_pairs::~cuda_nbody_all_pairs() {
         cudaFree(gpu_particles);
-        for (int i = 0; i < gridHeight; i++) {
-            free(hForcesX[i]);
-            free(hForcesY[i]);
-            cudaFree(dForcesX[i]);
-            cudaFree(dForcesY[i]);
-        }
         free(hForcesX);
         free(hForcesY);
         cudaFree(dForcesX);
         cudaFree(dForcesY);
     }
 
-    __global__ void calculate_forces(particle_t *particles, float **gForcesX,
-                                     float **gForcesY, const unsigned number_particles) {
-        __shared__ float sForcesX[BLOCK_HEIGHT][BLOCK_WIDTH];
-        __shared__ float sForcesY[BLOCK_HEIGHT][BLOCK_WIDTH];
+    __global__ void calculate_forces(particle_t *particles, double *gForcesX,
+                                     double *gForcesY, const unsigned number_particles,
+                                     const unsigned gridWidth) {
+        __shared__ double sForcesX[BLOCK_HEIGHT * BLOCK_WIDTH];
+        __shared__ double sForcesY[BLOCK_HEIGHT * BLOCK_WIDTH];
         int forceParticle  = blockIdx.x * blockDim.x + threadIdx.x;
         int targetParticle = blockIdx.y * blockDim.y + threadIdx.y;
         if (forceParticle < number_particles && targetParticle < number_particles) {
@@ -68,26 +57,41 @@ namespace cadlabs {
             double y_sep = fp->y_pos - tp->y_pos;
             double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
             double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
-            sForcesX[targetParticle][forceParticle] = (float)(grav_base * x_sep);
-            sForcesY[targetParticle][forceParticle] = (float)(grav_base * y_sep);
+            sForcesX[threadIdx.y * blockDim.x + threadIdx.x] = grav_base * x_sep;
+            sForcesY[threadIdx.y * blockDim.x + threadIdx.x] = grav_base * y_sep;
+
+            //printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
 
             __syncthreads();
+
+            /*if (blockIdx.x == 0 && blockIdx.y == 0 && threadIdx.x == 0 && threadIdx.y == 0) {
+                printf("HERE\n");
+                for (int i = 0; i < blockDim.x; i++)
+                    printf("%f ", sForcesX[i]);
+                printf("\n");
+            }*/
 
             /*
              * Reduce section
              */
             for(unsigned int s = 1; s < blockDim.x; s *= 2) {
-                if (!threadIdx.x % (2 * s)) {
-                    sForcesX[threadIdx.y][threadIdx.x] =
-                            sForcesX[threadIdx.y][threadIdx.x + s];
-                    sForcesY[threadIdx.y][threadIdx.x] =
-                            sForcesX[threadIdx.y][threadIdx.x + s];
+                if (!(threadIdx.x % (2 * s))) {
+                    //printf("ThreadIdx.x %d\n", threadIdx.x);
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    //printf("sForcesX[%d] += sForces[%d]\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + s);
+                    //printf("Result: sForcesX[%d] = %f\n", threadIdx.y * blockDim.x + threadIdx.x, sForcesX[threadIdx.y * blockDim.x + threadIdx.x]);
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
                 }
                 __syncthreads();
             }
+
+            //printf ("Thread(%d, %d) placed %f in sForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
+
             if (!threadIdx.x) {
-                gForcesX[targetParticle][blockIdx.x] = sForcesX[threadIdx.y][0];
-                gForcesY[targetParticle][blockIdx.x] = sForcesY[threadIdx.y][0];
+                gForcesX[targetParticle * gridWidth + blockIdx.x] = sForcesX[threadIdx.y * blockDim.x];
+                gForcesY[targetParticle * gridWidth + blockIdx.x] = sForcesY[threadIdx.y * blockDim.x];
             }
         }
     }
@@ -99,9 +103,26 @@ namespace cadlabs {
 
         dim3 grid(gridWidth, gridHeight);
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
-        ::cadlabs::calculate_forces<<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles);
+        ::cadlabs::calculate_forces<<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+        //printf("\n\n");
 
-        cudaMemcpy(particles, gpu_particles, size, cudaMemcpyDeviceToHost);
+        cudaMemcpy(hForcesX, dForcesX, gridHeight * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(hForcesY, dForcesY, gridHeight * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
+
+        /*for (int i = 0; i < gridWidth; i++)
+            printf("hForcesX[%d] = %f\n", i, hForcesX[i]);*/
+
+        for (int i = 0; i < number_particles; i++) {
+            int targetParticle = i * gridWidth;
+            double xF = 0; double yF = 0;
+            for (int j = 0; j < gridWidth; j++) {
+                xF += hForcesX[targetParticle + j];
+                yF += hForcesY[targetParticle + j];
+            }
+            particle_t *p = &particles[i];
+            p->x_force = xF;
+            p->y_force = yF;
+        }
     }
 
 

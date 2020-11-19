@@ -11,14 +11,20 @@ namespace cadlabs {
 
     class cuda_nbody_all_pairs : public nbody {
 
-        int gridWidth;
-        int gridHeight;
+        int gridWidth;   //(number_particles / BLOCK_WIDTH)
+        int gridHeight;  //(number_particles / BLOCK_HEIGHT)
 
-        float **hForcesX;
-        float **hForcesY;
+        /*
+         * Matrix (number_particles x gridWidth)
+         * Holds, for each particle an array with the forces to be applied to it.
+         * The forces in these arrays correspond to the effects of the particles on each others
+         * Each element of the arrays represent a reduction of the
+         */
+        double *hForcesX; //(number_particles x gridWidth)
+        double *hForcesY;
 
-        float **dForcesX;
-        float **dForcesY;
+        double *dForcesX;
+        double *dForcesY;
 
     public:
         cuda_nbody_all_pairs(
