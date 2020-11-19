@@ -44,8 +44,10 @@ namespace cadlabs {
                                      const unsigned gridWidth) {
         __shared__ double sForcesX[BLOCK_HEIGHT * BLOCK_WIDTH];
         __shared__ double sForcesY[BLOCK_HEIGHT * BLOCK_WIDTH];
+
         int forceParticle  = blockIdx.x * blockDim.x + threadIdx.x;
         int targetParticle = blockIdx.y * blockDim.y + threadIdx.y;
+
         if (forceParticle < number_particles && targetParticle < number_particles) {
 
             /*
@@ -53,10 +55,13 @@ namespace cadlabs {
              */
             particle_t *fp = &particles[forceParticle];
             particle_t *tp = &particles[targetParticle];
+
             double x_sep = fp->x_pos - tp->x_pos;
             double y_sep = fp->y_pos - tp->y_pos;
+
             double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
             double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
+
             sForcesX[threadIdx.y * blockDim.x + threadIdx.x] = grav_base * x_sep;
             sForcesY[threadIdx.y * blockDim.x + threadIdx.x] = grav_base * y_sep;
 
