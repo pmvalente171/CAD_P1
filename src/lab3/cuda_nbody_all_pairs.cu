@@ -87,7 +87,6 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
 
             pi->x_force += grav_base * x_sep;
             pi->y_force += grav_base * y_sep;
-            printf("force : %.3f; %.3f\n", pi->x_force, pi->y_force);
         }
     }
 }
@@ -97,7 +96,7 @@ __global__ void nbody_kernel_soa (const double * __restrict__ x_pos, const doubl
                                   const double * __restrict__ mass, const unsigned number_particles) {
     unsigned index = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if(index < number_particles/2) {
+    if(index < number_particles) {
         x_force[index] = 0;
         y_force[index] = 0;
 
@@ -113,7 +112,6 @@ __global__ void nbody_kernel_soa (const double * __restrict__ x_pos, const doubl
 
             x_force[index] += grav_base * x_sep;
             y_force[index] += grav_base * y_sep;
-            printf("force : %.3f; %.3f\n", x_force[index], y_force[index]);
         }
     }
 }
