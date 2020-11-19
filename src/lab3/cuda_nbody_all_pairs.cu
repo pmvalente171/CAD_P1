@@ -110,7 +110,7 @@ __global__ void nbody_kernel_soa (const double * __restrict__ x_pos, const doubl
             // Use the 2-dimensional gravity rule: F = d * (GMm/d^2)
             grav_base = GRAV_CONSTANT * (mass[index]) * (mass[j]) / dist_sq;
 
-            reinterpret_cast<double2 *>(x_force)[index] += grav_base * x_sep;
+            x_force[index] += grav_base * x_sep;
             y_force[index] += grav_base * y_sep;
         }
     }
