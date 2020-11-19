@@ -61,7 +61,7 @@ namespace cadlabs {
             sForcesX[threadIdx.y * blockDim.x + threadIdx.x] = grav_base * x_sep;
             sForcesY[threadIdx.y * blockDim.x + threadIdx.x] = grav_base * y_sep;
 
-            printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
+            //printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
 
             __syncthreads();
 
@@ -93,7 +93,7 @@ namespace cadlabs {
             //printf ("Thread(%d, %d) placed %f in sForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
 
             if (!threadIdx.x) {
-                printf("sForcesX[%d] corresponding to particle %d are %f\n", threadIdx.y * blockDim.x, targetParticle, sForcesX[threadIdx.y * blockDim.x]);
+                //printf("sForcesX[%d] corresponding to particle %d are %f\n", threadIdx.y * blockDim.x, targetParticle, sForcesX[threadIdx.y * blockDim.x]);
                 gForcesX[targetParticle * gridWidth + blockIdx.x] = sForcesX[threadIdx.y * blockDim.x];
                 gForcesY[targetParticle * gridWidth + blockIdx.x] = sForcesY[threadIdx.y * blockDim.x];
             }
@@ -111,8 +111,8 @@ namespace cadlabs {
         ::cadlabs::calculate_forces<<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
         //printf("\n\n");
 
-        cudaMemcpy(hForcesX, dForcesX, gridHeight * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(hForcesY, dForcesY, gridHeight * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(hForcesX, dForcesX, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpy(hForcesY, dForcesY, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
 
         /*for (int i = 0; i < number_particles; i++) {
             int targetParticle = i * gridWidth;
@@ -127,6 +127,8 @@ namespace cadlabs {
             int targetParticle = i * gridWidth;
             double xF = 0; double yF = 0;
             for (int j = 0; j < gridWidth; j++) {
+                //printf("index %d (i:%d, j:%d)\n", targetParticle + j, i, j);
+                //printf("hForcesX[%d] = %f, for particle %d\n", i, hForcesX[targetParticle + j], targetParticle);
                 xF += hForcesX[targetParticle + j];
                 yF += hForcesY[targetParticle + j];
             }
