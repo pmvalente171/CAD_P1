@@ -6,8 +6,8 @@
 #include <omp.h>
 #include <stdio.h>
 
-static constexpr int BLOCK_WIDTH  = 16;
-static constexpr int BLOCK_HEIGHT = 16;
+static constexpr int BLOCK_WIDTH  = 256;
+static constexpr int BLOCK_HEIGHT = 2;
 
 static constexpr int thread_block_size = 512;
 
@@ -44,31 +44,24 @@ namespace cadlabs {
                                      const unsigned gridWidth) {
         __shared__ double sForcesX[BLOCK_HEIGHT * BLOCK_WIDTH];
         __shared__ double sForcesY[BLOCK_HEIGHT * BLOCK_WIDTH];
-
+        sForcesX[threadIdx.y * blockDim.x + threadIdx.x] = .0;
+        sForcesY[threadIdx.y * blockDim.x + threadIdx.x] = .0;
         int forceParticle  = blockIdx.x * blockDim.x + threadIdx.x;
         int targetParticle = blockIdx.y * blockDim.y + threadIdx.y;
-
-        sForcesX[threadIdx.y * blockDim.x + threadIdx.x] = 0.0;
-        sForcesY[threadIdx.y * blockDim.x + threadIdx.x] = 0.0;
-
         if (forceParticle < number_particles && targetParticle < number_particles) {
-
             /*
              * Mapping section
              */
             particle_t *fp = &particles[forceParticle];
             particle_t *tp = &particles[targetParticle];
-
             double x_sep = fp->x_pos - tp->x_pos;
             double y_sep = fp->y_pos - tp->y_pos;
-
             double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
             double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
-
             sForcesX[threadIdx.y * blockDim.x + threadIdx.x] = grav_base * x_sep;
             sForcesY[threadIdx.y * blockDim.x + threadIdx.x] = grav_base * y_sep;
 
-            //printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
+            printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
 
             __syncthreads();
 
@@ -100,6 +93,7 @@ namespace cadlabs {
             //printf ("Thread(%d, %d) placed %f in sForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
 
             if (!threadIdx.x) {
+                printf("sForcesX[%d] corresponding to particle %d are %f\n", threadIdx.y * blockDim.x, targetParticle, sForcesX[threadIdx.y * blockDim.x]);
                 gForcesX[targetParticle * gridWidth + blockIdx.x] = sForcesX[threadIdx.y * blockDim.x];
                 gForcesY[targetParticle * gridWidth + blockIdx.x] = sForcesY[threadIdx.y * blockDim.x];
             }
@@ -141,7 +135,6 @@ namespace cadlabs {
             p->y_force = yF;
         }
     }
-
 
     void cuda_nbody_all_pairs::move_all_particles(double step) {
         nbody::move_all_particles(step);
