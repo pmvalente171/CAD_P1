@@ -10,7 +10,7 @@
 #include <ostream>
 #include "nbody/nbody_universe.h"
 
-// #define DEBUG
+#define DEBUG
 
 #ifdef DISPLAY
 #include "nbody/ui.h"

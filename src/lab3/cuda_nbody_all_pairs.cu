@@ -37,7 +37,7 @@ cuda_nbody_all_pairs::cuda_nbody_all_pairs(
     // stays constant across the
     // whole program
     cudaMemcpy(gpu_particles_soa.mass, particles_soa.mass,
-               number_particles * sizeof(double ), cudaMemcpyHostToDevice);
+               number_particles * sizeof(double), cudaMemcpyHostToDevice);
 
 #else
     cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
@@ -87,6 +87,7 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
 
             pi->x_force += grav_base * x_sep;
             pi->y_force += grav_base * y_sep;
+            printf("force : %.3f; %.3f\n", pi->x_force, pi->y_force);
         }
     }
 }
@@ -112,6 +113,7 @@ __global__ void nbody_kernel_soa (const double * __restrict__ x_pos, const doubl
 
             x_force[index] += grav_base * x_sep;
             y_force[index] += grav_base * y_sep;
+            printf("force : %.3f; %.3f\n", x_force[index], y_force[index]);
         }
     }
 }
