@@ -11,6 +11,15 @@ namespace cadlabs {
 
     class cuda_nbody_all_pairs : public nbody {
 
+        int gridWidth;
+        int gridHeight;
+
+        float **hForcesX;
+        float **hForcesY;
+
+        float **dForcesX;
+        float **dForcesY;
+
     public:
         cuda_nbody_all_pairs(
                 const int number_particles,
