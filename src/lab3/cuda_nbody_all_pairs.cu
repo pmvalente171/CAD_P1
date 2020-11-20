@@ -7,9 +7,9 @@
 #include <stdio.h>
 
 static constexpr int BLOCK_WIDTH  = 256;
-static constexpr int BLOCK_HEIGHT = 2;
+static constexpr int BLOCK_HEIGHT = 1;
 
-static constexpr int thread_block_size = 512;
+static constexpr int thread_block_size = 256;
 
 namespace cadlabs {
 
@@ -80,10 +80,14 @@ namespace cadlabs {
             sForcesY[threadIdx.y * blockDim.x + threadIdx.x] =
                     grav_base_1 * y_sep_1 + b * (grav_base_2 * y_sep_2);
 
-            //printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
+            //if (!targetParticle)
+              //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particles %d and %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, forceParticle + blockDim.x, targetParticle);
 
             __syncthreads();
 
+            double ret = 0;
+            for (int i = 0; i < number_particles; i++)
+                ret += sForcesX[i];
 
             /*
              * Reduce section
@@ -96,9 +100,13 @@ namespace cadlabs {
                 if (threadIdx.x < 512) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 512];
+                    //if (!targetParticle)
+                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 512, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 512, targetParticle);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 512];
                 }
+                //if (!threadIdx.x)
+                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
                 __syncthreads();
             }
             //s >>= 1;
@@ -109,9 +117,13 @@ namespace cadlabs {
                 if (threadIdx.x < 256) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 256];
+                    //if(!targetParticle)
+                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 256, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 256, targetParticle);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 256];
                 }
+                //if (!threadIdx.x)
+                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
                 __syncthreads();
             }
             //s >>= 1;
@@ -122,9 +134,13 @@ namespace cadlabs {
                 if (threadIdx.x < 128) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 128];
+                    //if(!targetParticle)
+                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 128, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 128, targetParticle);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 128];
                 }
+                //if (!threadIdx.x)
+                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
                 __syncthreads();
             }
             //s >>= 1;
@@ -135,9 +151,13 @@ namespace cadlabs {
                 if (threadIdx.x < 64) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 64];
+                    //if(!targetParticle)
+                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 64, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 64, targetParticle);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 64];
                 }
+                //if (!threadIdx.x)
+                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
                 __syncthreads();
             }
             //s >>= 1;
@@ -148,19 +168,27 @@ namespace cadlabs {
                         //printf("Block size of 64\n");
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 32];
+                    //if(!targetParticle)
+                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 32, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 32, targetParticle);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 32];
                 }
+                //if (!threadIdx.x)
+                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
                 //s >>= 1;
 
                 if (blockSize >= 32) {
                     //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                       // printf("Block size of 32\n");
+                        //printf("Block size of 32\n");
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 16];
+                    //if(!targetParticle)
+                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 16, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 16, targetParticle);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 16];
                 }
+                //if (!threadIdx.x)
+                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
                 //s >>= 1;
 
                 if (blockSize >= 16) {
@@ -168,19 +196,27 @@ namespace cadlabs {
                        // printf("Block size of 16\n");
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 8];
+                    //if(!targetParticle)
+                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 8, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 8, targetParticle);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 8];
                 }
+                //if (!threadIdx.x)
+                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
                 //s >>= 1;
 
                 if (blockSize >= 8) {
-                    //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                       // printf("Block size of 8\n");
+                    if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
+                        //printf("Block size of 8\n");
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 4];
+                    //if(!targetParticle)
+                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 4, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 4, targetParticle);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 4];
                 }
+                //if (!threadIdx.x)
+                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
                 //s >>= 1;
 
                 if (blockSize >= 4) {
@@ -188,9 +224,13 @@ namespace cadlabs {
                         //printf("Block size of 4\n");
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 2];
+                    //if(!targetParticle)
+                        //printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 2, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 2, targetParticle);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 2];
                 }
+                //if (!threadIdx.x)
+                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
                 //s >>= 1;
 
                 if (blockSize >= 2) {
@@ -198,9 +238,13 @@ namespace cadlabs {
                         //printf("Block size of 2\n");
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 1];
+                    //if(!targetParticle)
+                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 1, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 1, targetParticle);
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 1];
                 }
+                //if (!threadIdx.x)
+                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
             }
 
             /*for(s = (blockDim.x)/2; s > 32 ; s>>=1) {
@@ -261,7 +305,9 @@ namespace cadlabs {
             }*/
 
             if (!threadIdx.x) {
-                printf("sForcesX[%d] corresponding to particle %d are %f\n", threadIdx.y * blockDim.x, targetParticle, sForcesX[threadIdx.y * blockDim.x]);
+                if (ret != sForcesX[0])
+                    printf("Ret is %f while sForcesX is %f for particle %d\n", ret, sForcesX[0], targetParticle);
+                //printf("sForcesX[%d] corresponding to particle %d are %f\n", threadIdx.y * blockDim.x, targetParticle, sForcesX[threadIdx.y * blockDim.x]);
                 gForcesX[targetParticle * gridWidth + blockIdx.x] = sForcesX[threadIdx.y * blockDim.x];
                 gForcesY[targetParticle * gridWidth + blockIdx.x] = sForcesY[threadIdx.y * blockDim.x];
             }
