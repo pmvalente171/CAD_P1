@@ -123,11 +123,13 @@ __global__ void nbody_kernel_soa (const double * __restrict__ x_pos, const doubl
 
 #ifdef SOA
 void cuda_nbody_all_pairs::calculate_forces() {
-    // cudaStream_t streams[n_stream];
-
-    // for (auto & stream : streams) {
-    //     cudaStreamCreate(&stream);
-    // }
+    // Note that in this implementation
+    // we are using the whole particles
+    // array in every thread, so, we
+    // cannot stream parts of the array
+    // to get better performance in
+    // order to do this we would have to
+    // change our algorithm 
 
     uint count = number_particles * sizeof(double);
     cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, count, cudaMemcpyHostToDevice);
