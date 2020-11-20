@@ -75,8 +75,8 @@ namespace cadlabs {
             /*
              * Reduce section
              */
-            for(unsigned int s = 1; s < blockDim.x; s *= 2) {
-                if (!(threadIdx.x % (2 * s))) {
+            for(unsigned int s = blockDim.x/2;s>0;s>>=1) {
+                if (threadIdx.x < s) {
                     //printf("ThreadIdx.x %d\n", threadIdx.x);
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
