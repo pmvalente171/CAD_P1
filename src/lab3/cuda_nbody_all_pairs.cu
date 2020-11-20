@@ -87,8 +87,9 @@ namespace cadlabs {
             /*
              * Reduce section
              */
-            for(unsigned int s = (blockDim.x)/2; s > 32 ; s>>=1) {
-                // printf("S : %d\n", s);
+            unsigned int s;
+            for(s = (blockDim.x)/2; s > 32 ; s>>=1) {
+                //printf("S value: %d\n", s);
                 if (threadIdx.x < s) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
@@ -98,36 +99,48 @@ namespace cadlabs {
                 __syncthreads();
             }
 
-            if (threadIdx.x < 32 ) {
+            //printf("S value: %d\n", s);
+            if (threadIdx.x < s) {
+                //printf("S value: %d\n", s);
                 sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                         sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 32];
                 sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                         sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 32];
+                s >>= 1;
 
+                //printf("S value: %d\n", s);
                 sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 16];
+                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
                 sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 16];
+                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                s >>= 1;
 
+                //printf("S value: %d\n", s);
                 sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 8];
+                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
                 sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 8];
+                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                s >>= 1;
 
+                //printf("S value: %d\n", s);
                 sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 4];
+                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
                 sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 4];
+                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                s >>= 1;
 
+                //printf("S value: %d\n", s);
                 sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 2];
+                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
                 sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 2];
+                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                s >>= 1;
 
+                //printf("S value: %d\n", s);
                 sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 1];
+                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
                 sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 1];
+                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
             }
 
             if (!threadIdx.x) {
