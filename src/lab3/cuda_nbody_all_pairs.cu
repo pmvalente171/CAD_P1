@@ -129,7 +129,7 @@ void cuda_nbody_all_pairs::calculate_forces() {
     // cannot stream parts of the array
     // to get better performance in
     // order to do this we would have to
-    // change our algorithm 
+    // change our algorithm
 
     uint count = number_particles * sizeof(double);
     cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, count, cudaMemcpyHostToDevice);
@@ -144,12 +144,10 @@ void cuda_nbody_all_pairs::calculate_forces() {
 }
 #else
 void cuda_nbody_all_pairs::calculate_forces() {
-    // First calculate force for particle_soa.
     uint count = number_particles * sizeof(particle_t);
     cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
     nbody_kernel<<<number_blocks, thread_block_size>>>(gpu_particles, number_particles);
     cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
-    // cudaFree(gpu_particles);
 }
 #endif
 
