@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 static constexpr int BLOCK_WIDTH  = 256;
-static constexpr int BLOCK_HEIGHT = 1;
+static constexpr int BLOCK_HEIGHT = 2;
 
 static constexpr int thread_block_size = 512;
 
@@ -42,6 +42,7 @@ namespace cadlabs {
         cudaFree(dForcesY);
     }
 
+    template<unsigned int blockSize>
     __global__ void calculate_forces(particle_t *particles, double *gForcesX,
                                      double *gForcesY, const unsigned number_particles,
                                      const unsigned gridWidth) {
@@ -87,9 +88,9 @@ namespace cadlabs {
             /*
              * Reduce section
              */
-            unsigned int s;
-            for(s = (blockDim.x)/2; s > 32 ; s>>=1) {
-                //printf("S value: %d\n", s);
+            unsigned int s = 512;
+
+            if (blockSize >= 1024) {
                 if (threadIdx.x < s) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
@@ -98,9 +99,103 @@ namespace cadlabs {
                 }
                 __syncthreads();
             }
+            s >>= 1;
+
+            //if (blockSize >= 512) {
+                if (threadIdx.x < s) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                __syncthreads();
+            //}
+            s >>= 1;
+
+            if (blockSize >= 256) {
+                if (threadIdx.x < s) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                __syncthreads();
+            }
+            s >>= 1;
+
+            if (blockSize >= 128) {
+                if (threadIdx.x < s) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                __syncthreads();
+            }
+            s >>= 1;
+
+            if (threadIdx.x < 32) {
+                if (blockSize >= 64) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                s >>= 1;
+
+                if (blockSize >= 32) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                s >>= 1;
+
+                if (blockSize >= 16) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                s >>= 1;
+
+                if (blockSize >= 8) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                s >>= 1;
+
+                if (blockSize >= 4) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                s >>= 1;
+
+                if (blockSize >= 2) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+            }
+
+            /*for(s = (blockDim.x)/2; s > 32 ; s>>=1) {
+                //printf("S value: %d\n", s);
+                if (threadIdx.x < s) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                __syncthreads();
+            }*/
 
             //printf("S value: %d\n", s);
-            if (threadIdx.x < s) {
+            /*if (threadIdx.x < s) {
                 //printf("S value: %d\n", s);
                 sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                         sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 32];
@@ -109,6 +204,8 @@ namespace cadlabs {
                 s >>= 1;
 
                 //printf("S value: %d\n", s);
+                if (s != 16)
+                    printf ("In thread(%d, %d) corresponding to %d's effect on %d the S value is %d", threadIdx.y, threadIdx.x, forceParticle, targetParticle, s);
                 sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                         sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
                 sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
@@ -141,7 +238,7 @@ namespace cadlabs {
                         sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
                 sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                         sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
-            }
+            }*/
 
             if (!threadIdx.x) {
                 //printf("sForcesX[%d] corresponding to particle %d are %f\n", threadIdx.y * blockDim.x, targetParticle, sForcesX[threadIdx.y * blockDim.x]);
@@ -159,7 +256,43 @@ namespace cadlabs {
         dim3 grid(gridWidth, gridHeight);
         // printf("grid dims: %d, %d\n", gridWidth, gridHeight);
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
-        ::cadlabs::calculate_forces<<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+
+        switch(thread_block_size) {
+            case 1024:
+                ::cadlabs::calculate_forces<1024><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+            case 512:
+                ::cadlabs::calculate_forces<512><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+            case 256:
+                ::cadlabs::calculate_forces<256><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+            case 128:
+                ::cadlabs::calculate_forces<128><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+            case 64:
+                ::cadlabs::calculate_forces<64><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+            case 32:
+                ::cadlabs::calculate_forces<32><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+            case 16:
+                ::cadlabs::calculate_forces<16><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+            case 8:
+                ::cadlabs::calculate_forces<8><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+            case 4:
+                ::cadlabs::calculate_forces<4><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+            case 2:
+                ::cadlabs::calculate_forces<2><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+            case 1:
+                ::cadlabs::calculate_forces<1><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+                break;
+        }
+        ::cadlabs::calculate_forces<512><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
         //printf("\n\n");
 
         cudaMemcpy(hForcesX, dForcesX, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
