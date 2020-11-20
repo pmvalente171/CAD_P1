@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 static constexpr int BLOCK_WIDTH  = 256;
-static constexpr int BLOCK_HEIGHT = 1;
+static constexpr int BLOCK_HEIGHT = 2;
 
 static constexpr int thread_block_size = 256;
 
@@ -65,6 +65,7 @@ namespace cadlabs {
 
             particle_t *fp_1 = &particles[forceParticle], *fp_2 = &particles[forceParticle + blockDim.x];
             particle_t *tp = &particles[targetParticle];
+            // printf("values : %.6f ; %.6f\n", tp->x_pos, tp->y_pos);
 
             double x_sep_1 = fp_1->x_pos - tp->x_pos, x_sep_2 = fp_2->x_pos - tp->x_pos;
             double y_sep_1 = fp_1->y_pos - tp->y_pos, y_sep_2 = fp_2->y_pos - tp->y_pos;
@@ -80,233 +81,108 @@ namespace cadlabs {
             sForcesY[threadIdx.y * blockDim.x + threadIdx.x] =
                     grav_base_1 * y_sep_1 + b * (grav_base_2 * y_sep_2);
 
-            //if (!targetParticle)
-              //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particles %d and %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, forceParticle + blockDim.x, targetParticle);
-
             __syncthreads();
-
-            double ret = 0;
-            for (int i = 0; i < number_particles; i++)
-                ret += sForcesX[i];
 
             /*
              * Reduce section
              */
-            //unsigned int s = 512;
-
-            if (blockSize == 1024) {
-                //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                 //   printf("Block size of 1024\n");
-                if (threadIdx.x < 512) {
-                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 512];
-                    //if (!targetParticle)
-                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 512, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 512, targetParticle);
-                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 512];
-                }
-                //if (!threadIdx.x)
-                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
-                __syncthreads();
-            }
-            //s >>= 1;
+            unsigned int s = blockDim.x / 2;
+            // if (!threadIdx.x && !threadIdx.y) printf("s : %d\n", s);
+            // for(s = (blockDim.x)/2; s > 32 ; s>>=1) {
+            //     //printf("S value: %d\n", s);
+            //     if (threadIdx.x < s) {
+            //         sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+            //                 sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+            //         sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+            //                 sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+            //     }
+            //     __syncthreads();
+            // }
 
             if (blockSize >= 512) {
-                //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                  //  printf("Block size of 512\n");
-                if (threadIdx.x < 256) {
-                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 256];
-                    //if(!targetParticle)
-                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 256, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 256, targetParticle);
-                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 256];
-                }
-                //if (!threadIdx.x)
-                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
-                __syncthreads();
-            }
-            //s >>= 1;
-
-            if (blockSize >= 256) {
-                //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                    //printf("Block size of 256\n");
-                if (threadIdx.x < 128) {
-                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 128];
-                    //if(!targetParticle)
-                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 128, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 128, targetParticle);
-                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 128];
-                }
-                //if (!threadIdx.x)
-                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
-                __syncthreads();
-            }
-            //s >>= 1;
-
-            if (blockSize >= 128) {
-                //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                  //  printf("Block size of 128\n");
-                if (threadIdx.x < 64) {
-                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 64];
-                    //if(!targetParticle)
-                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 64, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 64, targetParticle);
-                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 64];
-                }
-                //if (!threadIdx.x)
-                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
-                __syncthreads();
-            }
-            //s >>= 1;
-
-            if (threadIdx.x < 32) {
-                if (blockSize >= 64) {
-                    //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                        //printf("Block size of 64\n");
-                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 32];
-                    //if(!targetParticle)
-                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 32, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 32, targetParticle);
-                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 32];
-                }
-                //if (!threadIdx.x)
-                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
-                //s >>= 1;
-
-                if (blockSize >= 32) {
-                    //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                        //printf("Block size of 32\n");
-                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 16];
-                    //if(!targetParticle)
-                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 16, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 16, targetParticle);
-                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 16];
-                }
-                //if (!threadIdx.x)
-                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
-                //s >>= 1;
-
-                if (blockSize >= 16) {
-                    //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                       // printf("Block size of 16\n");
-                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 8];
-                    //if(!targetParticle)
-                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 8, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 8, targetParticle);
-                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 8];
-                }
-                //if (!threadIdx.x)
-                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
-                //s >>= 1;
-
-                if (blockSize >= 8) {
-                    if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                        //printf("Block size of 8\n");
-                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 4];
-                    //if(!targetParticle)
-                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 4, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 4, targetParticle);
-                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 4];
-                }
-                //if (!threadIdx.x)
-                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
-                //s >>= 1;
-
-                if (blockSize >= 4) {
-                    //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                        //printf("Block size of 4\n");
-                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 2];
-                    //if(!targetParticle)
-                        //printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 2, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 2, targetParticle);
-                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 2];
-                }
-                //if (!threadIdx.x)
-                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
-                //s >>= 1;
-
-                if (blockSize >= 2) {
-                    //if (/*!blockIdx.x && !blockIdx.y &&*/ !threadIdx.x && !threadIdx.y)
-                        //printf("Block size of 2\n");
-                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 1];
-                    //if(!targetParticle)
-                      //  printf("Adding sForcesX[%d] with sForcesX[%d], resulting in %f, corresponding to particles %d and %d's effect on %d\n", threadIdx.y * blockDim.x + threadIdx.x, threadIdx.y * blockDim.x + threadIdx.x + 1, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], forceParticle, forceParticle + 1, targetParticle);
-                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 1];
-                }
-                //if (!threadIdx.x)
-                  //  printf ("Thread(%d, %d) placed %f in SForcesX[%d], corresponding to particle %d's effect on %d\n", threadIdx.x, threadIdx.y, sForcesX[threadIdx.y * blockDim.x + threadIdx.x], threadIdx.y * blockDim.x + threadIdx.x, forceParticle, targetParticle);
-            }
-
-            /*for(s = (blockDim.x)/2; s > 32 ; s>>=1) {
-                //printf("S value: %d\n", s);
                 if (threadIdx.x < s) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
                             sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
                 }
+                s >>= 1;
                 __syncthreads();
-            }*/
+            }
+
+            if (blockSize >= 256) {
+                if (threadIdx.x < s) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                s >>= 1;
+                __syncthreads();
+            }
+
+            if (blockSize >= 128) {
+                if (threadIdx.x < s) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+                s >>= 1;
+                __syncthreads();
+            }
 
             //printf("S value: %d\n", s);
-            /*if (threadIdx.x < s) {
-                //printf("S value: %d\n", s);
-                sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 32];
-                sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 32];
-                s >>= 1;
+            if (threadIdx.x < s) {
+                if (blockSize >= 64) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    s >>= 1;
+                }
 
-                //printf("S value: %d\n", s);
-                if (s != 16)
-                    printf ("In thread(%d, %d) corresponding to %d's effect on %d the S value is %d", threadIdx.y, threadIdx.x, forceParticle, targetParticle, s);
-                sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
-                sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
-                s >>= 1;
+                if (blockSize >= 32) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    s >>= 1;
+                }
 
-                //printf("S value: %d\n", s);
-                sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
-                sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
-                s >>= 1;
+                if (blockSize >= 16) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    s >>= 1;
+                }
 
-                //printf("S value: %d\n", s);
-                sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
-                sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
-                s >>= 1;
+                if (blockSize >= 8) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    s >>= 1;
+                }
 
-                //printf("S value: %d\n", s);
-                sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
-                sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
-                s >>= 1;
+                if (blockSize >= 4) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    s >>= 1;
+                }
 
-                //printf("S value: %d\n", s);
-                sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
-                sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                        sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
-            }*/
+                if (blockSize >= 2) {
+                    sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                    sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                }
+            }
 
             if (!threadIdx.x) {
-                if (ret != sForcesX[0])
-                    printf("Ret is %f while sForcesX is %f for particle %d\n", ret, sForcesX[0], targetParticle);
                 //printf("sForcesX[%d] corresponding to particle %d are %f\n", threadIdx.y * blockDim.x, targetParticle, sForcesX[threadIdx.y * blockDim.x]);
                 gForcesX[targetParticle * gridWidth + blockIdx.x] = sForcesX[threadIdx.y * blockDim.x];
                 gForcesY[targetParticle * gridWidth + blockIdx.x] = sForcesY[threadIdx.y * blockDim.x];
@@ -322,43 +198,7 @@ namespace cadlabs {
         dim3 grid(gridWidth, gridHeight);
         // printf("grid dims: %d, %d\n", gridWidth, gridHeight);
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
-
-        switch(thread_block_size) {
-            case 1024:
-                ::cadlabs::calculate_forces<1024><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-            case 512:
-                ::cadlabs::calculate_forces<512><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-            case 256:
-                ::cadlabs::calculate_forces<256><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-            case 128:
-                ::cadlabs::calculate_forces<128><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-            case 64:
-                ::cadlabs::calculate_forces<64><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-            case 32:
-                ::cadlabs::calculate_forces<32><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-            case 16:
-                ::cadlabs::calculate_forces<16><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-            case 8:
-                ::cadlabs::calculate_forces<8><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-            case 4:
-                ::cadlabs::calculate_forces<4><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-            case 2:
-                ::cadlabs::calculate_forces<2><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-            case 1:
-                ::cadlabs::calculate_forces<1><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
-                break;
-        }
-        ::cadlabs::calculate_forces<512><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+        ::cadlabs::calculate_forces<256><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
         //printf("\n\n");
 
         cudaMemcpy(hForcesX, dForcesX, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
