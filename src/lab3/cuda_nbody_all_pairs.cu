@@ -7,8 +7,8 @@
 #include <stdio.h>
 
 static constexpr int BLOCK_WIDTH  = 256;
-static constexpr int BLOCK_HEIGHT = 1;
-static constexpr int n = 1;
+static constexpr int BLOCK_HEIGHT = 2;
+static constexpr int n = 2;
 
 static constexpr int thread_block_size = 256;
 
@@ -194,19 +194,19 @@ namespace cadlabs {
     void cuda_nbody_all_pairs::calculate_forces() {
         uint size = number_particles * sizeof(particle_t);
         cudaMemcpy(gpu_particles, particles, size, cudaMemcpyHostToDevice);
-        const uint numStreams = 1;
+        const uint numStreams = 2;
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
 
         cudaStream_t streams[numStreams];
         for (int i = 0; i < numStreams; i++) {
             cudaStreamCreate(&streams[i]);
-            int offset = i * (gridHeight / numStreams) * gridWidth;
+            int offset = i * (gridHeight * BLOCK_HEIGHT / numStreams) * gridWidth;
             //printf("Offset: %d\n", offset);
             int partialHeight = (gridHeight / numStreams) + (i == numStreams - 1 && (gridHeight % numStreams));
             dim3 partialGrid(gridWidth, partialHeight);
             //printf("Starting from particle %d\n", i * BLOCK_HEIGHT * (gridHeight / numStreams));
             int targetOffset = i * BLOCK_HEIGHT * (gridHeight / numStreams);
-            printf("TargetOffset: %d\n", targetOffset);
+            //printf("TargetOffset: %d\n", targetOffset);
             ::cadlabs::calculate_forces<256><<<partialGrid, block>>>(gpu_particles,
                                                                      targetOffset,
                                                                      dForcesX, dForcesY,
