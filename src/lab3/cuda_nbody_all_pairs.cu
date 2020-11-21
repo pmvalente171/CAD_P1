@@ -44,9 +44,9 @@ namespace cadlabs {
     }
 
     template<unsigned int blockSize>
-    __global__ void calculate_forces(particle_t *particles, double *gForcesX,
-                                     double *gForcesY, const unsigned int number_particles,
-                                     const unsigned int gridWidth, const unsigned int n) {
+    __global__ void calculate_forces_two_cycles_parallel(particle_t *particles, double *gForcesX,
+                                                         double *gForcesY, const unsigned int number_particles,
+                                                         const unsigned int gridWidth, const unsigned int n) {
 
         __shared__ double sForcesX[BLOCK_HEIGHT * BLOCK_WIDTH];
         __shared__ double sForcesY[BLOCK_HEIGHT * BLOCK_WIDTH];
@@ -195,37 +195,48 @@ namespace cadlabs {
 
         switch (block_width) {
             case 1024:
-                calculate_forces<1024><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<1024><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                            number_particles, gridWidth, n);
                 break;
             case 512:
-                calculate_forces<512><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<512><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                           number_particles, gridWidth, n);
                 break;
             case 256:
-                calculate_forces<256><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<256><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                           number_particles, gridWidth, n);
                 break;
             case 128:
-                calculate_forces<128><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<128><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                           number_particles, gridWidth, n);
                 break;
             case 64:
-                calculate_forces<64><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<64><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                          number_particles, gridWidth, n);
                 break;
             case 32:
-                calculate_forces<32><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<32><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                          number_particles, gridWidth, n);
                 break;
             case 16:
-                calculate_forces<16><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<16><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                          number_particles, gridWidth, n);
                 break;
             case 8:
-                calculate_forces<8><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<8><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                         number_particles, gridWidth, n);
                 break;
             case 4:
-                calculate_forces<4><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<4><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                         number_particles, gridWidth, n);
                 break;
             case 2:
-                calculate_forces<2><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<2><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                         number_particles, gridWidth, n);
                 break;
             case 1:
-                calculate_forces<1><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel<1><<<grid, block>>>(particles, gForcesX, gForcesY,
+                                                                         number_particles, gridWidth, n);
                 break;
         }
     }
