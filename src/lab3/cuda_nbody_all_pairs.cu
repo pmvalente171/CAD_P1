@@ -11,7 +11,6 @@ static constexpr int BLOCK_HEIGHT = 2;
 static constexpr int n = 2;
 
 static constexpr int thread_block_size = 512;
-static constexpr int n_stream_width = 5, n_stream_height = 5;
 
 namespace cadlabs {
 
@@ -27,7 +26,6 @@ namespace cadlabs {
 
 
 #ifdef SOA
-        // cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
         cudaMalloc((void **)&gpu_particles_soa.x_pos, number_particles*sizeof(double));
         cudaMalloc((void **)&gpu_particles_soa.y_pos, number_particles*sizeof(double));
 
@@ -52,8 +50,6 @@ namespace cadlabs {
         gridWidth  = number_particles / (BLOCK_WIDTH * 2 * n) + (number_particles % (BLOCK_WIDTH * 2 * n) != 0);
         gridHeight = number_particles / (BLOCK_HEIGHT) + (number_particles % (BLOCK_HEIGHT) != 0);
 
-        /*hForcesX = (double *)malloc(number_particles * gridWidth * sizeof(double));
-        hForcesY = (double *)malloc(number_particles * gridWidth * sizeof(double));*/
         cudaMallocHost(&hForcesX, number_particles * gridWidth * sizeof(double));
         cudaMallocHost(&hForcesY, number_particles * gridWidth * sizeof(double));
 
@@ -235,7 +231,7 @@ namespace cadlabs {
     template<unsigned int blockSize>
     __global__ void calculate_forces_two_cycles_parallel_soa(
             const double * __restrict__ x_pos, const double * __restrict__ y_pos,
-            const double * __restrict__ mass,
+            const double * __restrict__ mass, const unsigned int target_offset,
             double * __restrict__ gForcesX, double * __restrict__ gForcesY,
             const unsigned int number_particles,
             const unsigned int gridWidth, const unsigned int n) {
@@ -244,7 +240,7 @@ namespace cadlabs {
         __shared__ double sForcesY[BLOCK_HEIGHT * BLOCK_WIDTH];
 
         unsigned int forceParticle  = blockIdx.x * 2 * blockDim.x + threadIdx.x;
-        unsigned int targetParticle = blockIdx.y * blockDim.y + threadIdx.y;
+        unsigned int targetParticle = blockIdx.y * blockDim.y + threadIdx.y + target_offset;
         unsigned int gridSize = blockDim.x * 2 * gridDim.x, i = 0;
 
         sForcesX[threadIdx.y * blockDim.x + threadIdx.x] = .0;
@@ -389,54 +385,54 @@ namespace cadlabs {
     static void call_kernel_soa(
             int block_width,
             const double * x_pos, const double * y_pos,
-            const double * mass,
+            const double * mass, const int target_offset,
             double * gForcesX, double * gForcesY,
             const unsigned int number_particles,
             const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block) {
 
         switch (block_width) {
             case 1024:
-                calculate_forces_two_cycles_parallel_soa<1024><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<1024><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                             number_particles, gridWidth, n);
                 break;
             case 512:
-                calculate_forces_two_cycles_parallel_soa<512><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<512><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                            number_particles, gridWidth, n);
                 break;
             case 256:
-                calculate_forces_two_cycles_parallel_soa<256><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<256><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                            number_particles, gridWidth, n);
                 break;
             case 128:
-                calculate_forces_two_cycles_parallel_soa<128><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<128><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                            number_particles, gridWidth, n);
                 break;
             case 64:
-                calculate_forces_two_cycles_parallel_soa<64><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<64><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                           number_particles, gridWidth, n);
                 break;
             case 32:
-                calculate_forces_two_cycles_parallel_soa<32><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<32><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                           number_particles, gridWidth, n);
                 break;
             case 16:
-                calculate_forces_two_cycles_parallel_soa<16><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<16><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                           number_particles, gridWidth, n);
                 break;
             case 8:
-                calculate_forces_two_cycles_parallel_soa<8><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<8><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                          number_particles, gridWidth, n);
                 break;
             case 4:
-                calculate_forces_two_cycles_parallel_soa<4><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<4><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                          number_particles, gridWidth, n);
                 break;
             case 2:
-                calculate_forces_two_cycles_parallel_soa<2><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<2><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                          number_particles, gridWidth, n);
                 break;
             case 1:
-                calculate_forces_two_cycles_parallel_soa<1><<<grid, block>>>(x_pos, y_pos, mass, gForcesX, gForcesY,
+                calculate_forces_two_cycles_parallel_soa<1><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
                                                                          number_particles, gridWidth, n);
                 break;
         }
@@ -501,15 +497,36 @@ namespace cadlabs {
 
 #ifdef SOA
     void cuda_nbody_all_pairs::calculate_forces() {
-        uint count = number_particles * sizeof(double);
-        cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, count, cudaMemcpyHostToDevice);
-        cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, count, cudaMemcpyHostToDevice);
-        dim3 grid(gridWidth, gridHeight);
+        constexpr uint numStreams = 3;
+        cudaStream_t streams[numStreams];
+        uint size = number_particles * sizeof(double);
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
-        call_kernel_soa(BLOCK_WIDTH, gpu_particles_soa.x_pos, gpu_particles_soa.y_pos, gpu_particles_soa.mass,
-                        dForcesX, dForcesY, number_particles, gridWidth, n, grid, block);
-        cudaMemcpy(hForcesX, dForcesX, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(hForcesY, dForcesY, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
+
+        cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, size, cudaMemcpyHostToDevice);
+        cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, size, cudaMemcpyHostToDevice);
+
+        for (int i = 0; i < numStreams; i++) {
+            cudaStreamCreate(&streams[i]);
+
+            unsigned int offset = i * (gridHeight * BLOCK_HEIGHT / numStreams) * gridWidth;
+            unsigned int partialHeight = (gridHeight / numStreams) + (i == numStreams - 1 && (gridHeight % numStreams));
+            int targetOffset = (int)(i * BLOCK_HEIGHT * (gridHeight / numStreams));
+            dim3 partialGrid(gridWidth, partialHeight);
+
+            call_kernel_soa(
+                    BLOCK_WIDTH, gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
+                    gpu_particles_soa.mass, targetOffset, dForcesX, dForcesY,
+                    number_particles, gridWidth, n, partialGrid, block);
+
+            cudaMemcpyAsync(&hForcesX[offset], &dForcesX[offset],
+                            partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double),
+                            cudaMemcpyDeviceToHost, streams[i]);
+            cudaMemcpyAsync(&hForcesY[offset], &dForcesY[offset],
+                            partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double),
+                            cudaMemcpyDeviceToHost, streams[i]);
+        }
+
+        cudaDeviceSynchronize();
 
         for (int i = 0; i < number_particles; i++) {
             int targetParticle = i * gridWidth;
@@ -524,36 +541,33 @@ namespace cadlabs {
     }
 #else
     void cuda_nbody_all_pairs::calculate_forces() {
-
+        constexpr uint numStreams = 5;
+        cudaStream_t streams[numStreams];
         uint size = number_particles * sizeof(particle_t);
-        cudaMemcpy(gpu_particles, particles, size, cudaMemcpyHostToDevice);
-        const uint numStreams = 2;
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
 
-        cudaStream_t streams[numStreams];
+        cudaMemcpy(gpu_particles, particles, size, cudaMemcpyHostToDevice);
+
         for (int i = 0; i < numStreams; i++) {
             cudaStreamCreate(&streams[i]);
-            int offset = i * (gridHeight / numStreams) * gridWidth;
-            //printf("Offset: %d\n", offset);
-            int partialHeight = (gridHeight / numStreams) + (i == numStreams - 1 && (gridHeight % numStreams));
+
+            unsigned int offset = i * (gridHeight * BLOCK_HEIGHT / numStreams) * gridWidth;
+            unsigned int partialHeight = (gridHeight / numStreams) + (i == numStreams - 1 && (gridHeight % numStreams));
+            int targetOffset = (int)(i * BLOCK_HEIGHT * (gridHeight / numStreams));
             dim3 partialGrid(gridWidth, partialHeight);
-            //printf("Starting from particle %d\n", i * BLOCK_HEIGHT * (gridHeight / numStreams));
-            int targetOffset = i * BLOCK_HEIGHT * (gridHeight / numStreams);
-            // printf("TargetOffset: %d\n", targetOffset);
+
             call_kernel_aos(BLOCK_WIDTH, gpu_particles, targetOffset,
                             dForcesX, dForcesY, number_particles, gridWidth,
                             n, partialGrid, block, streams[i]);
-            /*::cadlabs::calculate_forces<256><<<partialGrid, block>>>(gpu_particles,
-                    targetOffset,
-                    dForcesX, dForcesY,
-                    number_particles, gridWidth, n);*/
-            cudaMemcpyAsync(&hForcesX[offset], &dForcesX[offset], partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double), cudaMemcpyDeviceToHost, streams[i]);
-            cudaMemcpyAsync(&hForcesY[offset], &dForcesY[offset], partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double), cudaMemcpyDeviceToHost, streams[i]);
-            //printf("blocks retreived: %d\n", partialHeight * BLOCK_HEIGHT * gridWidth);
-            //printf("Stream %d received data from blocks %d to %d\n", i, offset, offset + partialHeight * BLOCK_HEIGHT * gridWidth);
+
+            cudaMemcpyAsync(&hForcesX[offset], &dForcesX[offset],
+                            partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double),
+                            cudaMemcpyDeviceToHost, streams[i]);
+            cudaMemcpyAsync(&hForcesY[offset], &dForcesY[offset],
+                            partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double),
+                            cudaMemcpyDeviceToHost, streams[i]);
         }
-        /*for (int i = 0; i < numStreams; i++)
-            cudaStreamSynchronize(streams[i]);*/
+
         cudaDeviceSynchronize();
 
         for (int i = 0; i < number_particles; i++) {
@@ -567,7 +581,6 @@ namespace cadlabs {
             p->x_force = xF;
             p->y_force = yF;
         }
-        //printf("\n");
     }
 #endif
 
