@@ -28,8 +28,10 @@ namespace cadlabs {
         gridWidth  = number_particles / (BLOCK_WIDTH * 2 * n) + (number_particles % (BLOCK_WIDTH * 2 * n) != 0);
         gridHeight = number_particles / (BLOCK_HEIGHT) + (number_particles % (BLOCK_HEIGHT) != 0);
 
-        hForcesX = (double *)malloc(number_particles * gridWidth * sizeof(double));
-        hForcesY = (double *)malloc(number_particles * gridWidth * sizeof(double));
+        //hForcesX = (double *)malloc(number_particles * gridWidth * sizeof(double));
+        //hForcesY = (double *)malloc(number_particles * gridWidth * sizeof(double));
+        cudaMallocHost(&hForcesX, number_particles * gridWidth * sizeof(double));
+        cudaMallocHost(&hForcesY, number_particles * gridWidth * sizeof(double));
 
         cudaMalloc(&dForcesX, number_particles * gridWidth * sizeof(double));
         cudaMalloc(&dForcesY, number_particles * gridWidth * sizeof(double));
@@ -37,8 +39,8 @@ namespace cadlabs {
 
     cuda_nbody_all_pairs::~cuda_nbody_all_pairs() {
         cudaFree(gpu_particles);
-        free(hForcesX);
-        free(hForcesY);
+        cudaFreeHost(hForcesX);
+        cudaFreeHost(hForcesY);
         cudaFree(dForcesX);
         cudaFree(dForcesY);
     }
@@ -190,14 +192,18 @@ namespace cadlabs {
 
     void cuda_nbody_all_pairs::calculate_forces() {
         uint size = number_particles * sizeof(particle_t);
+        cudaStream_t stream1;
+        cudaStreamCreate(&stream1);
 
-        cudaMemcpy(gpu_particles, particles, size, cudaMemcpyHostToDevice);
+        cudaMemcpyAsync(gpu_particles, particles, size, cudaMemcpyHostToDevice, stream1);
 
         dim3 grid(gridWidth, gridHeight);
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
         ::cadlabs::calculate_forces<256><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth, n);
-        cudaMemcpy(hForcesX, dForcesX, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
-        cudaMemcpy(hForcesY, dForcesY, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaMemcpyAsync(hForcesX, dForcesX, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost, stream1);
+        cudaMemcpyAsync(hForcesY, dForcesY, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost, stream1);
+
+        cudaStreamSynchronize(stream1);
 
         for (int i = 0; i < number_particles; i++) {
             int targetParticle = i * gridWidth;
