@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 static constexpr int BLOCK_WIDTH  = 256;
-static constexpr int BLOCK_HEIGHT = 2;
+static constexpr int BLOCK_HEIGHT = 1;
 
 static constexpr int thread_block_size = 256;
 
@@ -86,7 +86,6 @@ namespace cadlabs {
             /*
              * Reduce section
              */
-            unsigned int s = blockDim.x / 2;
             // if (!threadIdx.x && !threadIdx.y) printf("s : %d\n", s);
             // for(s = (blockDim.x)/2; s > 32 ; s>>=1) {
             //     //printf("S value: %d\n", s);
@@ -99,46 +98,50 @@ namespace cadlabs {
             //     __syncthreads();
             // }
 
+            unsigned int s = blockDim.x / 2;
+
             if (blockSize >= 512) {
-                if (threadIdx.x < s) {
+                if (threadIdx.x < 256) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 256];
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 256];
                 }
-                s >>= 1;
                 __syncthreads();
             }
 
             if (blockSize >= 256) {
-                if (threadIdx.x < s) {
+                if (threadIdx.x < 128) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 128];
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 128];
                 }
-                s >>= 1;
                 __syncthreads();
             }
 
             if (blockSize >= 128) {
-                if (threadIdx.x < s) {
+                if (threadIdx.x < 64) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 64];
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 64];
                 }
-                s >>= 1;
                 __syncthreads();
             }
 
-            //printf("S value: %d\n", s);
+            if (blockSize >= 512) s >>= 3;
+            else if (blockSize >= 256) s >>= 2;
+            else if (blockSize >= 128) s >>= 1;
+
+
+            // printf("S value: %d\n", s);
             if (threadIdx.x < s) {
                 if (blockSize >= 64) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + s];
+                            sForcesX[threadIdx.y * blockDim.x + threadIdx.x + 32];
                     sForcesY[threadIdx.y * blockDim.x + threadIdx.x] +=
-                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + s];
+                            sForcesY[threadIdx.y * blockDim.x + threadIdx.x + 32];
                     s >>= 1;
                 }
 
