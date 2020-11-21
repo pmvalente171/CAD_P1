@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 static constexpr int BLOCK_WIDTH  = 256;
-static constexpr int BLOCK_HEIGHT = 2;
+static constexpr int BLOCK_HEIGHT = 1;
 static constexpr int n = 1;
 
 static constexpr int thread_block_size = 256;
@@ -28,8 +28,6 @@ namespace cadlabs {
         gridWidth  = number_particles / (BLOCK_WIDTH * 2 * n) + (number_particles % (BLOCK_WIDTH * 2 * n) != 0);
         gridHeight = number_particles / (BLOCK_HEIGHT) + (number_particles % (BLOCK_HEIGHT) != 0);
 
-        //hForcesX = (double *)malloc(number_particles * gridWidth * sizeof(double));
-        //hForcesY = (double *)malloc(number_particles * gridWidth * sizeof(double));
         cudaMallocHost(&hForcesX, number_particles * gridWidth * sizeof(double));
         cudaMallocHost(&hForcesY, number_particles * gridWidth * sizeof(double));
 
@@ -46,16 +44,19 @@ namespace cadlabs {
     }
 
     template<unsigned int blockSize>
-    __global__ void calculate_forces(particle_t *particles, double *gForcesX,
-                                     double *gForcesY, const unsigned int number_particles,
+    __global__ void calculate_forces(particle_t *particles, const unsigned int targetOffset,
+                                     double *gForcesX, double *gForcesY,
+                                     const unsigned int number_particles,
                                      const unsigned int gridWidth, const unsigned int n) {
 
         __shared__ double sForcesX[BLOCK_HEIGHT * BLOCK_WIDTH];
         __shared__ double sForcesY[BLOCK_HEIGHT * BLOCK_WIDTH];
 
         unsigned int forceParticle  = blockIdx.x * 2 * blockDim.x + threadIdx.x;
-        unsigned int targetParticle = blockIdx.y * blockDim.y + threadIdx.y;
+        unsigned int targetParticle = blockIdx.y * blockDim.y + threadIdx.y + targetOffset;
         unsigned int gridSize = blockDim.x * 2 * gridDim.x, i = 0;
+
+        //printf("Thread(%d, %d)\n", forceParticle, targetParticle);
 
         sForcesX[threadIdx.y * blockDim.x + threadIdx.x] = .0;
         sForcesY[threadIdx.y * blockDim.x + threadIdx.x] = .0;
@@ -192,18 +193,32 @@ namespace cadlabs {
 
     void cuda_nbody_all_pairs::calculate_forces() {
         uint size = number_particles * sizeof(particle_t);
-        cudaStream_t stream1;
-        cudaStreamCreate(&stream1);
-
-        cudaMemcpyAsync(gpu_particles, particles, size, cudaMemcpyHostToDevice, stream1);
-
-        dim3 grid(gridWidth, gridHeight);
+        cudaMemcpy(gpu_particles, particles, size, cudaMemcpyHostToDevice);
+        const uint numStreams = 1;
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
-        ::cadlabs::calculate_forces<256><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth, n);
-        cudaMemcpyAsync(hForcesX, dForcesX, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost, stream1);
-        cudaMemcpyAsync(hForcesY, dForcesY, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost, stream1);
 
-        cudaStreamSynchronize(stream1);
+        cudaStream_t streams[numStreams];
+        for (int i = 0; i < numStreams; i++) {
+            cudaStreamCreate(&streams[i]);
+            int offset = i * (gridHeight / numStreams) * gridWidth;
+            //printf("Offset: %d\n", offset);
+            int partialHeight = (gridHeight / numStreams) + (i == numStreams - 1 && (gridHeight % numStreams));
+            dim3 partialGrid(gridWidth, partialHeight);
+            //printf("Starting from particle %d\n", i * BLOCK_HEIGHT * (gridHeight / numStreams));
+            int targetOffset = i * BLOCK_HEIGHT * (gridHeight / numStreams);
+            printf("TargetOffset: %d\n", targetOffset);
+            ::cadlabs::calculate_forces<256><<<partialGrid, block>>>(gpu_particles,
+                                                                     targetOffset,
+                                                                     dForcesX, dForcesY,
+                                                                     number_particles, gridWidth, n);
+            cudaMemcpyAsync(&hForcesX[offset], &dForcesX[offset], partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double), cudaMemcpyDeviceToHost, streams[i]);
+            cudaMemcpyAsync(&hForcesY[offset], &dForcesY[offset], partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double), cudaMemcpyDeviceToHost, streams[i]);
+            //printf("blocks retreived: %d\n", partialHeight * BLOCK_HEIGHT * gridWidth);
+            //printf("Stream %d received data from blocks %d to %d\n", i, offset, offset + partialHeight * BLOCK_HEIGHT * gridWidth);
+        }
+        /*for (int i = 0; i < numStreams; i++)
+            cudaStreamSynchronize(streams[i]);*/
+        cudaDeviceSynchronize();
 
         for (int i = 0; i < number_particles; i++) {
             int targetParticle = i * gridWidth;
@@ -216,6 +231,7 @@ namespace cadlabs {
             p->x_force = xF;
             p->y_force = yF;
         }
+        //printf("\n");
     }
 
     void cuda_nbody_all_pairs::move_all_particles(double step) {
