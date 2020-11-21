@@ -278,12 +278,14 @@ namespace cadlabs {
 
 #ifdef SOA
     void cuda_nbody_all_pairs::calculate_forces() {
-        uint size = number_particles * sizeof(particle_t);
+        uint count = number_particles * sizeof(double);
         dim3 grid(gridWidth, gridHeight);
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
 
-        cudaMemcpy(gpu_particles, particles, size, cudaMemcpyHostToDevice);
-        calculate_force_aos<<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth);
+        cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, count, cudaMemcpyHostToDevice);
+        cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, count, cudaMemcpyHostToDevice);
+        calculate_forces_soa<<<grid, block>>>(gpu_particles_soa.x_pos, gpu_particles_soa.y_pos, dForcesX, dForcesY,
+                                              gpu_particles_soa.mass, number_particles, gridWidth);
         cudaMemcpy(hForcesX, dForcesX, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(hForcesY, dForcesY, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
 
