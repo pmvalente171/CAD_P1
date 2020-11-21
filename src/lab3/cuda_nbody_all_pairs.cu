@@ -189,7 +189,7 @@ namespace cadlabs {
 
     // TODO : Having this in a separate method for this
     //  might lead to a small performance loss
-    void call_kernel(int block_width, particle_t *particles, double *gForcesX,
+    static void call_kernel(int block_width, particle_t *particles, double *gForcesX,
                      double *gForcesY, const unsigned int number_particles,
                      const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block) {
 
