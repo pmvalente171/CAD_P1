@@ -46,8 +46,9 @@ namespace cadlabs {
     }
 
     template<unsigned int blockSize>
-    __global__ void calculate_forces(particle_t *particles, double *gForcesX,
-                                     double *gForcesY, const unsigned int number_particles,
+    __global__ void calculate_forces(particle_t *particlesT, particle_t *particlesF,
+                                     double *gForcesX, double *gForcesY,
+                                     const unsigned int number_particles,
                                      const unsigned int gridWidth, const unsigned int n) {
 
         __shared__ double sForcesX[BLOCK_HEIGHT * BLOCK_WIDTH];
@@ -70,8 +71,8 @@ namespace cadlabs {
                 int a = (forceParticle < number_particles);
                 int b = ((forceParticle + blockDim.x) < number_particles);
 
-                particle_t *fp_1 = &particles[forceParticle], *fp_2 = &particles[forceParticle + blockDim.x];
-                particle_t *tp = &particles[targetParticle];
+                particle_t *fp_1 = &particlesF[forceParticle], *fp_2 = &particlesF[forceParticle + blockDim.x];
+                particle_t *tp = &particlesT[targetParticle];
                 // printf("values : %.6f ; %.6f\n", tp->x_pos, tp->y_pos);
 
                 double x_sep_1 = fp_1->x_pos - tp->x_pos, x_sep_2 = fp_2->x_pos - tp->x_pos;
@@ -199,7 +200,7 @@ namespace cadlabs {
 
         dim3 grid(gridWidth, gridHeight);
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
-        ::cadlabs::calculate_forces<256><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth, n);
+        ::cadlabs::calculate_forces<256><<<grid, block>>>(gpu_particles, gpu_particles, dForcesX, dForcesY, number_particles, gridWidth, n);
         cudaMemcpyAsync(hForcesX, dForcesX, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost, stream1);
         cudaMemcpyAsync(hForcesY, dForcesY, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost, stream1);
 
