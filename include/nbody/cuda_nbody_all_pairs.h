@@ -40,13 +40,15 @@ namespace cadlabs {
         void print_all_particles(std::ostream &out);
 
     protected:
-        void calculate_forces();
+        void calculate_forces() override;
 
         void all_init_particles();
 
-        void move_all_particles(double step);
+        void move_all_particles(double step) override;
 
         particle_t *gpu_particles;
+
+        particle_soa gpu_particles_soa;
 
         const unsigned number_blocks;
 

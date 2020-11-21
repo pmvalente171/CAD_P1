@@ -53,7 +53,7 @@ namespace cadlabs {
     }
 
 
-/* print recursively the particles of a node */
+/* print recursively the particle_soa of a node */
     void print_particles(FILE *f, node_t *n) {
         if (!n) {
             return;

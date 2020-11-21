@@ -7,7 +7,7 @@ namespace cadlabs {
 /* draw recursively the content of a node */
     void draw_node(node_t *n);
 
-/* print recursively the particles of a node */
+/* print recursively the particle_soa of a node */
     void print_particles(FILE *f, node_t *n);
 
 /* Initialize a node */
