@@ -13,7 +13,7 @@ void usage(char *prog) {
                     "\t-u --> universe type [0 - line, 1 - sphere, 2 - rotating disc] (default 0)\n"
                     "\t-s --> seed for universe creation (if needed).\n"
                     "\t-# --> number of times running the simulation (default 1)\n"
-                    "\t-d --> prints to a file the particles positions to an output file named arg\n", prog);
+                    "\t-d --> prints to a file the particle_soa positions to an output file named arg\n", prog);
 }
 
 int main(int argc, char**argv) {

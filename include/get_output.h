@@ -16,6 +16,7 @@ using namespace data_types;
 class get_output {
 public:
     void save_values_by_iteration(particle_t *particles, int nb_of_particles);
+    void save_values_by_iteration(double *x, double *y, double *vel_x, double *vel_y, int nb_of_particles);
     explicit get_output(const string& file_name);
     ~get_output();
 
