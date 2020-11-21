@@ -1,7 +1,3 @@
-/**
- * Hervé Paulino
- */
-
 #include <nbody/cuda_nbody_all_pairs.h>
 #include <omp.h>
 #include <stdio.h>
@@ -93,8 +89,6 @@ namespace cadlabs {
         unsigned int targetParticle = blockIdx.y * blockDim.y + threadIdx.y + targetOffset;
         unsigned int gridSize = blockDim.x * 2 * gridDim.x, i = 0;
 
-        //printf("Thread(%d, %d)\n", forceParticle, targetParticle);
-
         sForcesX[threadIdx.y * blockDim.x + threadIdx.x] = .0;
         sForcesY[threadIdx.y * blockDim.x + threadIdx.x] = .0;
 
@@ -110,7 +104,6 @@ namespace cadlabs {
 
                 particle_t *fp_1 = &particles[forceParticle], *fp_2 = &particles[forceParticle + blockDim.x];
                 particle_t *tp = &particles[targetParticle];
-                // printf("values : %.6f ; %.6f\n", tp->x_pos, tp->y_pos);
 
                 double x_sep_1 = fp_1->x_pos - tp->x_pos, x_sep_2 = fp_2->x_pos - tp->x_pos;
                 double y_sep_1 = fp_1->y_pos - tp->y_pos, y_sep_2 = fp_2->y_pos - tp->y_pos;
@@ -170,7 +163,6 @@ namespace cadlabs {
             else if (blockSize >= 256) s >>= 2;
             else if (blockSize >= 128) s >>= 1;
 
-            // printf("S value: %d\n", s);
             if (threadIdx.x < s) {
                 if (blockSize >= 64) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
@@ -221,7 +213,6 @@ namespace cadlabs {
             }
 
             if (!threadIdx.x) {
-                //printf("sForcesX[%d] corresponding to particle %d are %f\n", threadIdx.y * blockDim.x, targetParticle, sForcesX[threadIdx.y * blockDim.x]);
                 gForcesX[targetParticle * gridWidth + blockIdx.x] = sForcesX[threadIdx.y * blockDim.x];
                 gForcesY[targetParticle * gridWidth + blockIdx.x] = sForcesY[threadIdx.y * blockDim.x];
             }
@@ -248,17 +239,13 @@ namespace cadlabs {
 
         if (forceParticle < number_particles
             && targetParticle < number_particles) {
+
             /*
              * Mapping section
              */
-
             while (i < n) {
                 int a = (forceParticle < number_particles);
                 int b = ((forceParticle + blockDim.x) < number_particles);
-
-                // particle_t *fp_1 = &particles[forceParticle], *fp_2 = &particles[forceParticle + blockDim.x];
-                // particle_t *tp = &particles[targetParticle];
-                // printf("values : %.6f ; %.6f\n", tp->x_pos, tp->y_pos);
 
                 double x_sep_1 = x_pos[forceParticle] - x_pos[targetParticle],
                 x_sep_2 = x_pos[forceParticle + blockDim.x] - x_pos[targetParticle];
@@ -372,7 +359,6 @@ namespace cadlabs {
             }
 
             if (!threadIdx.x) {
-                //printf("sForcesX[%d] corresponding to particle %d are %f\n", threadIdx.y * blockDim.x, targetParticle, sForcesX[threadIdx.y * blockDim.x]);
                 gForcesX[targetParticle * gridWidth + blockIdx.x] = sForcesX[threadIdx.y * blockDim.x];
                 gForcesY[targetParticle * gridWidth + blockIdx.x] = sForcesY[threadIdx.y * blockDim.x];
             }
@@ -380,8 +366,8 @@ namespace cadlabs {
     }
 
 #ifdef SOA
-    // TODO : Having this in a separate method for this
-    //  might lead to a small performance loss
+    // Having this in a separate method for this
+    // might lead to a small performance loss
     static void call_kernel_soa(
             int block_width,
             const double * x_pos, const double * y_pos,
@@ -439,8 +425,8 @@ namespace cadlabs {
     }
 
 #else
-    // TODO : Having this in a separate method for this
-    //  might lead to a small performance loss
+    // Having this in a separate method for this
+    // might lead to a small performance loss
     static void call_kernel_aos(
             int block_width, particle_t *particles, int targetOffset, double *gForcesX,
             double *gForcesY, const unsigned int number_particles,
