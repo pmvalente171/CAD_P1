@@ -18,7 +18,7 @@ par_nbody_all_pairs::par_nbody_all_pairs(
 
 
 void par_nbody_all_pairs::calculate_forces() {
-        /* First calculate force for particles. */
+        /* First calculate force for particle_soa. */
 
 #pragma omp parallel for num_threads(number_of_threads)
     for (int i = 0; i < number_particles; i++) {
