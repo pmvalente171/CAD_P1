@@ -8,7 +8,7 @@
 
 static constexpr int BLOCK_WIDTH  = 256;
 static constexpr int BLOCK_HEIGHT = 2;
-static constexpr int n = 1;
+static constexpr int n = 2;
 
 static constexpr int thread_block_size = 256;
 
@@ -130,7 +130,6 @@ namespace cadlabs {
             else if (blockSize >= 256) s >>= 2;
             else if (blockSize >= 128) s >>= 1;
 
-            // printf("S value: %d\n", s);
             if (threadIdx.x < s) {
                 if (blockSize >= 64) {
                     sForcesX[threadIdx.y * blockDim.x + threadIdx.x] +=
@@ -188,6 +187,49 @@ namespace cadlabs {
         }
     }
 
+    // TODO : Having this in a separate method for this
+    //  might lead to a small performance loss
+    void call_kernel(int block_width, particle_t *particles, double *gForcesX,
+                     double *gForcesY, const unsigned int number_particles,
+                     const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block) {
+
+        switch (block_width) {
+            case 1024:
+                calculate_forces<1024><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 512:
+                calculate_forces<512><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 256:
+                calculate_forces<256><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 128:
+                calculate_forces<128><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 64:
+                calculate_forces<64><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 32:
+                calculate_forces<32><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces<16><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces<8><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces<4><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces<2><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces<1><<<grid, block>>>(particles, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+        }
+    }
+
     void cuda_nbody_all_pairs::calculate_forces() {
         uint size = number_particles * sizeof(particle_t);
 
@@ -195,7 +237,8 @@ namespace cadlabs {
 
         dim3 grid(gridWidth, gridHeight);
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
-        ::cadlabs::calculate_forces<256><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth, n);
+        call_kernel(BLOCK_WIDTH, gpu_particles, dForcesX, dForcesY, number_particles, gridWidth, n,grid, block);
+        //::cadlabs::calculate_forces<256><<<grid, block>>>(gpu_particles, dForcesX, dForcesY, number_particles, gridWidth, n);
         cudaMemcpy(hForcesX, dForcesX, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
         cudaMemcpy(hForcesY, dForcesY, number_particles * gridWidth * sizeof(double), cudaMemcpyDeviceToHost);
 
