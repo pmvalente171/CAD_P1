@@ -11,7 +11,7 @@ namespace cadlabs {
 
     class cuda_nbody_all_pairs : public nbody {
 
-        int gridWidth;   //(number_particles / BLOCK_WIDTH)
+        int gridWidth;   //(number_particles / blockWidth)
         int gridHeight;  //(number_particles / BLOCK_HEIGHT)
 
         /*
@@ -30,10 +30,11 @@ namespace cadlabs {
         cuda_nbody_all_pairs(
                 const int number_particles,
                 const float t_final,
-                const unsigned number_of_threads,
+                const unsigned n,
                 const universe_t universe,
                 const unsigned universe_seed = 0,
-                const string file_name = "");
+                const string file_name = "",
+                int blockWidth = 256);
 
         ~cuda_nbody_all_pairs();
 
@@ -50,7 +51,9 @@ namespace cadlabs {
 
         particle_soa gpu_particles_soa;
 
-        const unsigned number_blocks;
+        const unsigned n;
+
+        const unsigned blockWidth;
 
     };
 }

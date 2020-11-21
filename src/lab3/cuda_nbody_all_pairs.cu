@@ -2,23 +2,22 @@
 #include <omp.h>
 #include <stdio.h>
 
-static constexpr int BLOCK_WIDTH  = 256;
-static constexpr int BLOCK_HEIGHT = 2;
-static constexpr int n = 2;
 
-static constexpr int thread_block_size = 512;
+static constexpr int BLOCK_HEIGHT = 2;
+constexpr uint numStreams = 2;
 
 namespace cadlabs {
 
     cuda_nbody_all_pairs::cuda_nbody_all_pairs(
             const int number_particles,
             const float t_final,
-            const unsigned number_of_threads,
+            const unsigned n,
             const universe_t universe,
             const unsigned universe_seed,
-            const string file_name) :
+            const string file_name,
+            const int blockWidth) :
             nbody(number_particles, t_final, universe, universe_seed, file_name),
-            number_blocks ((number_particles + thread_block_size - 1)/thread_block_size)  {
+            blockWidth(blockWidth), n(n)  {
 
 
 #ifdef SOA
@@ -43,7 +42,7 @@ namespace cadlabs {
         cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
 #endif
         cudaMalloc(&gpu_particles, number_particles*sizeof(particle_t));
-        gridWidth  = number_particles / (BLOCK_WIDTH * 2 * n) + (number_particles % (BLOCK_WIDTH * 2 * n) != 0);
+        gridWidth  = number_particles / (blockWidth * 2 * n) + (number_particles % (blockWidth * 2 * n) != 0);
         gridHeight = number_particles / (BLOCK_HEIGHT) + (number_particles % (BLOCK_HEIGHT) != 0);
 
         cudaMallocHost(&hForcesX, number_particles * gridWidth * sizeof(double));
@@ -77,13 +76,13 @@ namespace cadlabs {
 
     //STREAM IMPLEMENTATION WITH ARRAYS OF STRUCTURES
     template<unsigned int blockSize>
-    __global__ void calculate_forces_two_cycles_parallel(particle_t *particles, const unsigned int targetOffset,
-                                     double *gForcesX, double *gForcesY,
+    __global__ void calculate_forces_two_cycles_parallel(particle_t * __restrict__ particles, const unsigned int targetOffset,
+                                     double * __restrict__ gForcesX, double * __restrict__ gForcesY,
                                      const unsigned int number_particles,
                                      const unsigned int gridWidth, const unsigned int n) {
 
-        __shared__ double sForcesX[BLOCK_HEIGHT * BLOCK_WIDTH];
-        __shared__ double sForcesY[BLOCK_HEIGHT * BLOCK_WIDTH];
+        __shared__ double sForcesX[BLOCK_HEIGHT * blockSize];
+        __shared__ double sForcesY[BLOCK_HEIGHT * blockSize];
 
         unsigned int forceParticle  = blockIdx.x * 2 * blockDim.x + threadIdx.x;
         unsigned int targetParticle = blockIdx.y * blockDim.y + threadIdx.y + targetOffset;
@@ -227,8 +226,8 @@ namespace cadlabs {
             const unsigned int number_particles,
             const unsigned int gridWidth, const unsigned int n) {
 
-        __shared__ double sForcesX[BLOCK_HEIGHT * BLOCK_WIDTH];
-        __shared__ double sForcesY[BLOCK_HEIGHT * BLOCK_WIDTH];
+        __shared__ double sForcesX[BLOCK_HEIGHT * blockSize];
+        __shared__ double sForcesY[BLOCK_HEIGHT * blockSize];
 
         unsigned int forceParticle  = blockIdx.x * 2 * blockDim.x + threadIdx.x;
         unsigned int targetParticle = blockIdx.y * blockDim.y + threadIdx.y + target_offset;
@@ -483,10 +482,9 @@ namespace cadlabs {
 
 #ifdef SOA
     void cuda_nbody_all_pairs::calculate_forces() {
-        constexpr uint numStreams = 3;
         cudaStream_t streams[numStreams];
         uint size = number_particles * sizeof(double);
-        dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
+        dim3 block(blockWidth, BLOCK_HEIGHT);
 
         cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, size, cudaMemcpyHostToDevice);
         cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, size, cudaMemcpyHostToDevice);
@@ -500,7 +498,7 @@ namespace cadlabs {
             dim3 partialGrid(gridWidth, partialHeight);
 
             call_kernel_soa(
-                    BLOCK_WIDTH, gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
+                    blockWidth, gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
                     gpu_particles_soa.mass, targetOffset, dForcesX, dForcesY,
                     number_particles, gridWidth, n, partialGrid, block);
 
@@ -527,10 +525,9 @@ namespace cadlabs {
     }
 #else
     void cuda_nbody_all_pairs::calculate_forces() {
-        constexpr uint numStreams = 5;
         cudaStream_t streams[numStreams];
         uint size = number_particles * sizeof(particle_t);
-        dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
+        dim3 block(blockWidth, BLOCK_HEIGHT);
 
         cudaMemcpy(gpu_particles, particles, size, cudaMemcpyHostToDevice);
 
@@ -542,7 +539,7 @@ namespace cadlabs {
             int targetOffset = (int)(i * BLOCK_HEIGHT * (gridHeight / numStreams));
             dim3 partialGrid(gridWidth, partialHeight);
 
-            call_kernel_aos(BLOCK_WIDTH, gpu_particles, targetOffset,
+            call_kernel_aos(blockWidth, gpu_particles, targetOffset,
                             dForcesX, dForcesY, number_particles, gridWidth,
                             n, partialGrid, block, streams[i]);
 

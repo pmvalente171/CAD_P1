@@ -10,11 +10,13 @@
 void usage(char *prog) {
     fprintf(stderr, "usage: %s number_particles [-t duration time] [-u universe] [-s seed]\n"
                     "\t-t --> number of end time (default 1.0)\n"
-                    "\t-n --> number of threads running the simulation (default number of hardware threads)\n"
                     "\t-u --> universe type [0 - line, 1 - sphere, 2 - rotating disc] (default 0)\n"
                     "\t-s --> seed for universe creation (if needed).\n"
                     "\t-# --> number of times running the simulation (default 1)\n"
-                    "\t-d --> prints to a file the particle_soa positions to an output file named arg\n", prog);
+                    "\t-d --> prints to a file the particle_soa positions to an output file named arg\n"
+                    "\n"
+                    "\t-n --> n*2 is equal to the number reductions executed per thread\n"
+                    "\t-w --> the block width of the current execution\n", prog);
 }
 
 int main(int argc, char**argv) {
@@ -29,13 +31,14 @@ int main(int argc, char**argv) {
     // default values
     float T_FINAL = 10.0;
     cadlabs::universe_t universe = cadlabs::universe_t::ORIGINAL;
-    unsigned number_of_threads = std::thread::hardware_concurrency();
+    auto n = 2;
     auto number_of_runs = 1;
     auto universe_seed = 0;
     auto file_name = "";
+    auto block_width = 256;
 
     int c;
-    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:d:")) != -1)
+    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:d:w:")) != -1)
         switch (c) {
             case 't':
                 T_FINAL = atof(optarg);
@@ -46,7 +49,7 @@ int main(int argc, char**argv) {
                 break;
 
             case 'n':
-                number_of_threads = atoi(optarg);;
+                n = atoi(optarg);;
                 break;
 
             case 's':
@@ -61,13 +64,17 @@ int main(int argc, char**argv) {
                 file_name = optarg;
                 break;
 
+            case 'w':
+                block_width = atoi(optarg);
+                break;
+
             default:
                 fprintf (stderr, "%c option not supported\n", c);
                 usage(argv[0]);
                 exit(1);
         }
 
-    cadlabs::cuda_nbody_all_pairs nbody(nparticles, T_FINAL, number_of_threads, universe, universe_seed, file_name);
+    cadlabs::cuda_nbody_all_pairs nbody(nparticles, T_FINAL, n, universe, universe_seed, file_name, block_width);
     marrow::timer<> t;
 
     for (int i = 0; i < number_of_runs; i++) {

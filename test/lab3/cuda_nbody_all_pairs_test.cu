@@ -39,7 +39,7 @@ TEST(NBody, CUDA_All_Pairs_P1000_T10_U0_T4) {
     auto nparticles = 1000;
     auto T_FINAL = 10.0;
     auto universe = cadlabs::universe_t::ORIGINAL;
-    auto number_of_threads = 4;
+    auto number_of_threads = 2;
     std::string original_result_log = "p1000_t10_u0.log";
 
     cadlabs::cuda_nbody_all_pairs nbody(nparticles, T_FINAL, number_of_threads, universe);
