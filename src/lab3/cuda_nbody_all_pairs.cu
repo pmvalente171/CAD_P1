@@ -524,9 +524,10 @@ namespace cadlabs {
     }
 #else
     void cuda_nbody_all_pairs::calculate_forces() {
+
         uint size = number_particles * sizeof(particle_t);
         cudaMemcpy(gpu_particles, particles, size, cudaMemcpyHostToDevice);
-        const uint numStreams = 1;
+        const uint numStreams = 2;
         dim3 block(BLOCK_WIDTH, BLOCK_HEIGHT);
 
         cudaStream_t streams[numStreams];
@@ -538,7 +539,7 @@ namespace cadlabs {
             dim3 partialGrid(gridWidth, partialHeight);
             //printf("Starting from particle %d\n", i * BLOCK_HEIGHT * (gridHeight / numStreams));
             int targetOffset = i * BLOCK_HEIGHT * (gridHeight / numStreams);
-            //printf("TargetOffset: %d\n", targetOffset);
+            // printf("TargetOffset: %d\n", targetOffset);
             call_kernel_aos(BLOCK_WIDTH, gpu_particles, targetOffset,
                             dForcesX, dForcesY, number_particles, gridWidth,
                             n, partialGrid, block, streams[i]);
