@@ -11,6 +11,21 @@ namespace cadlabs {
 
     class cuda_nbody_all_pairs : public nbody {
 
+        int gridWidth;   //(number_particles / BLOCK_WIDTH)
+        int gridHeight;  //(number_particles / BLOCK_HEIGHT)
+
+        /*
+         * Matrix (number_particles x gridWidth)
+         * Holds, for each particle an array with the forces to be applied to it.
+         * The forces in these arrays correspond to the effects of the particles on each others
+         * Each element of the arrays represent a reduction of the
+         */
+        double *hForcesX; //(number_particles x gridWidth)
+        double *hForcesY;
+
+        double *dForcesX;
+        double *dForcesY;
+
     public:
         cuda_nbody_all_pairs(
                 const int number_particles,
@@ -25,13 +40,15 @@ namespace cadlabs {
         void print_all_particles(std::ostream &out);
 
     protected:
-        void calculate_forces();
+        void calculate_forces() override;
 
         void all_init_particles();
 
-        void move_all_particles(double step);
+        void move_all_particles(double step) override;
 
         particle_t *gpu_particles;
+
+        particle_soa gpu_particles_soa;
 
         const unsigned number_blocks;
 
