@@ -483,6 +483,7 @@ namespace cadlabs {
 #ifdef SOA
     void cuda_nbody_all_pairs::calculate_forces() {
         cudaStream_t streams[numStreams];
+        cudaEvent_t events[numStreams];
         uint size = number_particles * sizeof(double);
         dim3 block(blockWidth, BLOCK_HEIGHT);
 
@@ -491,9 +492,12 @@ namespace cadlabs {
 
         for (int i = 0; i < numStreams; i++) {
             cudaStreamCreate(&streams[i]);
+            cudaEventCreate(&events[i]);
 
-            unsigned int offset = i * (gridHeight * BLOCK_HEIGHT / numStreams) * gridWidth;
-            unsigned int partialHeight = (gridHeight / numStreams) + (i == numStreams - 1 && (gridHeight % numStreams));
+            unsigned int partialHeight = (gridHeight / numStreams) +
+                    (i == numStreams - 1 && (gridHeight % numStreams)) *
+                    gridHeight % numStreams;
+            int temp = partialHeight * BLOCK_HEIGHT;
             int targetOffset = (int)(i * BLOCK_HEIGHT * (gridHeight / numStreams));
             dim3 partialGrid(gridWidth, partialHeight);
 
@@ -502,30 +506,40 @@ namespace cadlabs {
                     gpu_particles_soa.mass, targetOffset, dForcesX, dForcesY,
                     number_particles, gridWidth, n, partialGrid, block);
 
-            cudaMemcpyAsync(&hForcesX[offset], &dForcesX[offset],
-                            partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double),
+            cudaMemcpyAsync(&hForcesX[targetOffset], &dForcesX[targetOffset],
+                            temp * sizeof(double),
                             cudaMemcpyDeviceToHost, streams[i]);
-            cudaMemcpyAsync(&hForcesY[offset], &dForcesY[offset],
-                            partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double),
+            cudaMemcpyAsync(&hForcesY[targetOffset], &dForcesY[targetOffset],
+                            temp * sizeof(double),
                             cudaMemcpyDeviceToHost, streams[i]);
+            cudaEventRecord(events[i], streams[i]);
         }
 
-        cudaDeviceSynchronize();
+        for (int s=0; s<numStreams; s++) {
+            cudaEventSynchronize(events[s]);
 
-        for (int i = 0; i < number_particles; i++) {
-            int targetParticle = i * gridWidth;
-            double xF = 0; double yF = 0;
-            for (int j = 0; j < gridWidth; j++) {
-                xF += hForcesX[targetParticle + j];
-                yF += hForcesY[targetParticle + j];
+            unsigned int padding = (gridHeight / numStreams) +
+                    (s == numStreams - 1 && (gridHeight % numStreams)) *
+                    (gridHeight % numStreams);
+
+            padding *= BLOCK_HEIGHT;
+            unsigned int offset = (int)(s * BLOCK_HEIGHT * (gridHeight / numStreams));
+            for (unsigned int i = offset; i < offset + padding; i++) {
+                int targetParticle = i * gridWidth;
+                double xF = 0; double yF = 0;
+                for (int j = 0; j < gridWidth; j++) {
+                    xF += hForcesX[targetParticle + j];
+                    yF += hForcesY[targetParticle + j];
+                }
+                particles_soa.x_force[i] = xF;
+                particles_soa.y_force[i] = yF;
             }
-            particles_soa.x_force[i] = xF;
-            particles_soa.y_force[i] = yF;
         }
     }
 #else
     void cuda_nbody_all_pairs::calculate_forces() {
         cudaStream_t streams[numStreams];
+        cudaEvent_t events[numStreams];
         uint size = number_particles * sizeof(particle_t);
         dim3 block(blockWidth, BLOCK_HEIGHT);
 
@@ -533,9 +547,12 @@ namespace cadlabs {
 
         for (int i = 0; i < numStreams; i++) {
             cudaStreamCreate(&streams[i]);
+            cudaEventCreate(&events[i]);
 
-            unsigned int offset = i * (gridHeight * BLOCK_HEIGHT / numStreams) * gridWidth;
-            unsigned int partialHeight = (gridHeight / numStreams) + (i == numStreams - 1 && (gridHeight % numStreams));
+            unsigned int partialHeight = (gridHeight / numStreams) +
+                    (i == numStreams - 1 && (gridHeight % numStreams)) *
+                    gridHeight % numStreams;
+            int temp = partialHeight * BLOCK_HEIGHT;
             int targetOffset = (int)(i * BLOCK_HEIGHT * (gridHeight / numStreams));
             dim3 partialGrid(gridWidth, partialHeight);
 
@@ -543,26 +560,35 @@ namespace cadlabs {
                             dForcesX, dForcesY, number_particles, gridWidth,
                             n, partialGrid, block, streams[i]);
 
-            cudaMemcpyAsync(&hForcesX[offset], &dForcesX[offset],
-                            partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double),
+            cudaMemcpyAsync(&hForcesX[targetOffset], &dForcesX[targetOffset],
+                            temp * sizeof(double),
                             cudaMemcpyDeviceToHost, streams[i]);
-            cudaMemcpyAsync(&hForcesY[offset], &dForcesY[offset],
-                            partialHeight * BLOCK_HEIGHT * gridWidth * sizeof(double),
+            cudaMemcpyAsync(&hForcesY[targetOffset], &dForcesY[targetOffset],
+                            temp * sizeof(double),
                             cudaMemcpyDeviceToHost, streams[i]);
+            cudaEventRecord(events[i], streams[i]);
         }
 
-        cudaDeviceSynchronize();
+        for (int s=0; s<numStreams; s++) {
+            cudaEventSynchronize(events[s]);
 
-        for (int i = 0; i < number_particles; i++) {
-            int targetParticle = i * gridWidth;
-            double xF = 0; double yF = 0;
-            for (int j = 0; j < gridWidth; j++) {
-                xF += hForcesX[targetParticle + j];
-                yF += hForcesY[targetParticle + j];
+            unsigned int padding = (gridHeight / numStreams) +
+                    (s == numStreams - 1 && (gridHeight % numStreams)) *
+                    (gridHeight % numStreams);
+
+            padding *= BLOCK_HEIGHT;
+            unsigned int offset = (int)(s * BLOCK_HEIGHT * (gridHeight / numStreams));
+            for (unsigned int i = offset; i < offset + padding; i++) {
+                int targetParticle = i * gridWidth;
+                double xF = 0; double yF = 0;
+                for (int j = 0; j < gridWidth; j++) {
+                    xF += hForcesX[targetParticle + j];
+                    yF += hForcesY[targetParticle + j];
+                }
+                particle_t *p = &particles[i];
+                p->x_force = xF;
+                p->y_force = yF;
             }
-            particle_t *p = &particles[i];
-            p->x_force = xF;
-            p->y_force = yF;
         }
     }
 #endif
