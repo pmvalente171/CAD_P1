@@ -39,6 +39,8 @@ __global__ void two_cycles_parallel(particle_t* particles, const unsigned number
         double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
         atomicAdd(&(tp->x_force), grav_base * x_sep);
         atomicAdd(&(tp->y_force), grav_base * y_sep);
+        atomicAdd(&(fp->x_force), -grav_base * x_sep);
+        atomicAdd(&(fp->x_force), -grav_base * y_sep);
     }
 }
 
@@ -64,7 +66,7 @@ void cuda_nbody_all_pairs::calculate_forces() {
     }
 
     cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
-    dim3 grid(number_blocks, number_blocks);
+    dim3 grid(number_blocks, number_blocks / 2);
     dim3 block(thread_block_size, thread_block_size);
     two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles);
     cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
