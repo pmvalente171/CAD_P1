@@ -36,9 +36,10 @@ int main(int argc, char**argv) {
     auto universe_seed = 0;
     auto file_name = "";
     auto block_width = 256;
+    auto n_streams = 5;
 
     int c;
-    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:d:w:")) != -1)
+    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:d:w:o:")) != -1)
         switch (c) {
             case 't':
                 T_FINAL = atof(optarg);
@@ -68,13 +69,16 @@ int main(int argc, char**argv) {
                 block_width = atoi(optarg);
                 break;
 
+            case 'o':
+                n_streams = atoi(optarg);
+                break;
             default:
                 fprintf (stderr, "%c option not supported\n", c);
                 usage(argv[0]);
                 exit(1);
         }
 
-    cadlabs::cuda_nbody_all_pairs nbody(nparticles, T_FINAL, n, universe, universe_seed, file_name, block_width);
+    cadlabs::cuda_nbody_all_pairs nbody(nparticles, T_FINAL, n, universe, universe_seed, file_name, block_width, n_streams);
     marrow::timer<> t;
 
     for (int i = 0; i < number_of_runs; i++) {

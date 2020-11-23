@@ -4,7 +4,7 @@
 
 
 static constexpr int BLOCK_HEIGHT = 2;
-constexpr uint numStreams = 2;
+//constexpr uint numStreams = 1;
 
 namespace cadlabs {
 
@@ -15,9 +15,10 @@ namespace cadlabs {
             const universe_t universe,
             const unsigned universe_seed,
             const string file_name,
-            const int blockWidth) :
+            const int blockWidth,
+            const int n_streams) :
             nbody(number_particles, t_final, universe, universe_seed, file_name),
-            blockWidth(blockWidth), n(n)  {
+            blockWidth(blockWidth), n(n), numStreams(n_streams)  {
 
 
 #ifdef SOA
