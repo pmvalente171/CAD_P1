@@ -1,6 +1,13 @@
 # Labs of the CAD course from MIEI@DI-FCT-UNL
 
-- Lab1 (src/lab) - Sequential implementation of the all pairs solution for the NBody problem.
-- Lab2 (src/lab2 and test/lab2) - Parallel, OpenMP-based, implementation of the all pairs solution for the NBody problem.
-- Lab3 (src/lab3 and test/lab3) - Parallel, CUDA-based, implementation of the container pairwise addition.
-Codebase for a CUDA-based implementation of the all pairs solution for the NBody problem.
+## Project Structure
+
+This project is composed of three main folders:
+- **SEQ (src/SEQ)** - This folder contains the sequential implementations of our project, this includes one that uses an AoS (array of structures) and one using SoA (structure of arrays);
+- **PAR (src/PAR)** - This folder contains a parallel implementation of the nbody problem using the *OpenMP* framework;
+- **CUDA (src/CUDA)** - This folder contains several implementations of the nbody problem using CUDA, these are the following, it's important to note that every algorithm that follows has both a implementation using AoS and another using SoA : 
+    - A first naive implementation that parallelizes the outer loop of the problem;
+    - A solution that parallelizes both of the loops, but only uses global memory accesses, to preform reads and writes;
+    - A solution that parallelizes both of the loops, but relies on the usage of shared memory, to preform temporary reads and writes;
+    
+    

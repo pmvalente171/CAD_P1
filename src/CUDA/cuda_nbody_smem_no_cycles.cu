@@ -3,7 +3,7 @@
 #include "stdio.h"
 
 static constexpr int thread_block_width = 16;
-static constexpr int thread_block_height = 16;
+static constexpr int thread_block_height = 8;
 
 int number_blocks_width;
 int number_blocks_height;
@@ -126,11 +126,10 @@ namespace cadlabs {
         }
     }
 
-    __global__
-    void two_cycles_parallel_soa(
-            const double * __restrict__ x_pos, const double * __restrict__ y_pos,
-            force * __restrict__ x_force, force * __restrict__ y_force,
-            const double * __restrict__ mass, const unsigned number_particles) {
+    __global__ void two_cycles_parallel_soa(
+            const double * x_pos, const double * y_pos,
+            force * x_force, force * y_force,
+            const double * mass, const unsigned number_particles) {
 
         __shared__ force smem_x_force[thread_block_width];
         __shared__ force smem_y_force[thread_block_width];
@@ -222,7 +221,7 @@ namespace cadlabs {
         cudaMemcpy(gpu_particles_soa.y_force, particles_soa.y_force, f_count, cudaMemcpyHostToDevice);
 
         dim3 grid(number_blocks_width, number_blocks_height);
-        dim3 block(blockWidth, blockHeight);
+        dim3 block(thread_block_width, thread_block_height);
 
         two_cycles_parallel_soa<<<grid, block>>>(
                 gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,

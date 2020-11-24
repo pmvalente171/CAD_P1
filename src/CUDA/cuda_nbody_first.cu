@@ -140,7 +140,6 @@ namespace cadlabs {
     cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, count, cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, count, cudaMemcpyHostToDevice);
 
-
         nbody_kernel_soa<<<number_blocks_width, blockWidth>>>(
             gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
             gpu_particles_soa.x_force, gpu_particles_soa.y_force,
