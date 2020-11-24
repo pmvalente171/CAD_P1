@@ -1,6 +1,13 @@
 #ifndef CADLABS_GPU_DATA_TYPES_H
 #define CADLABS_GPU_DATA_TYPES_H
 // #define SOA
+// #define GMEM_I1
+
+#ifdef GMEM_I1
+typedef float force;
+#else
+typedef double force;
+#endif
 
 namespace data_types{
 
@@ -13,7 +20,7 @@ namespace data_types{
     struct particle_t {
         double x_pos, y_pos;        /* position of the particle */
         double x_vel, y_vel;        /* velocity of the particle */
-        double x_force, y_force;    /* gravitational forces that apply against this particle */
+        force x_force, y_force;    /* gravitational forces that apply against this particle */
         double mass;                /* mass of the particle */
         node_t *node;               /* only used for the barnes-hut algorithm */
     };
