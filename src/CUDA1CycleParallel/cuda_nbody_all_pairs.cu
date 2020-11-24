@@ -5,7 +5,6 @@
 #include <nbody/cuda_nbody_all_pairs.h>
 
 static constexpr int thread_block_size = 256;
-static constexpr int n_stream = 5;
 int number_blocks = 1;
 
 namespace cadlabs {
@@ -50,7 +49,6 @@ cuda_nbody_all_pairs::cuda_nbody_all_pairs(
 }
 
 cuda_nbody_all_pairs::~cuda_nbody_all_pairs() {
-    // cudaFree(gpu_particles);
 #ifdef SOA
     cudaFree(gpu_particles_soa.x_pos);
     cudaFree(gpu_particles_soa.y_pos);
@@ -79,7 +77,7 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
 
         for (int j = 0; j < number_particles; j++) {
             particle_t *pj = &particles[j];
-            /* compute the force of particle j on particle i */
+            // compute the force of particle j on particle i
 
             double x_sep, y_sep, dist_sq, grav_base;
 
@@ -87,7 +85,7 @@ __global__ void nbody_kernel(particle_t* particles, const unsigned number_partic
             y_sep = pj->y_pos - pi->y_pos;
             dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
 
-            /* Use the 2-dimensional gravity rule: F = d * (GMm/d^2) */
+            // Use the 2-dimensional gravity rule: F = d * (GMm/d^2)
             grav_base = GRAV_CONSTANT * (pi->mass) * (pj->mass) / dist_sq;
 
             pi->x_force += grav_base * x_sep;
