@@ -95,11 +95,12 @@ namespace cadlabs {
     }
 
     __global__
-    void nbody_kernel_soa (const double * __restrict__ x_pos, const double * __restrict__ y_pos,
-                                      double * __restrict__ x_force, double * __restrict__ y_force,
-                                      const double * __restrict__ mass, const unsigned number_particles) {
-        unsigned index = blockIdx.x * blockDim.x + threadIdx.x;
+    void nbody_kernel_soa (
+            const double * __restrict__ x_pos, const double * __restrict__ y_pos,
+            force * __restrict__ x_force, force * __restrict__ y_force,
+            const double * __restrict__ mass, const unsigned number_particles) {
 
+        unsigned index = blockIdx.x * blockDim.x + threadIdx.x;
         if(index < number_particles) {
             x_force[index] = 0;
             y_force[index] = 0;
@@ -125,7 +126,7 @@ namespace cadlabs {
  */
 
 #ifdef SOA
-    void cuda_nbody_all_pairs::calculate_forces() {
+    void cuda_nbody_first::calculate_forces() {
     // Note that in this implementation
     // we are using the whole particles
     // array in every thread, so, we
@@ -138,9 +139,10 @@ namespace cadlabs {
     cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, count, cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, count, cudaMemcpyHostToDevice);
 
-    nbody_kernel_soa<<<number_blocks, thread_block_size>>>(gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
-                                                           gpu_particles_soa.x_force, gpu_particles_soa.y_force,
-                                                           gpu_particles_soa.mass, number_particles);
+    nbody_kernel_soa<<<number_blocks_width, thread_block_size>>>(
+            gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
+            gpu_particles_soa.x_force, gpu_particles_soa.y_force,
+            gpu_particles_soa.mass, number_particles);
 
     cudaMemcpy(particles_soa.x_force, gpu_particles_soa.x_force, count, cudaMemcpyDeviceToHost);
     cudaMemcpy(particles_soa.y_force, gpu_particles_soa.y_force, count, cudaMemcpyDeviceToHost);

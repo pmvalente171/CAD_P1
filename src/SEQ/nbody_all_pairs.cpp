@@ -37,8 +37,8 @@ namespace cadlabs {
         particles_soa.x_vel = static_cast<double *>(malloc(sizeof(double) * number_particles));
         particles_soa.y_vel = static_cast<double *>(malloc(sizeof(double) * number_particles));
 
-        particles_soa.x_force = static_cast<double *>(malloc(sizeof(double) * number_particles));
-        particles_soa.y_force = static_cast<double *>(malloc(sizeof(double) * number_particles));
+        particles_soa.x_force = static_cast<force *>(malloc(sizeof(double) * number_particles));
+        particles_soa.y_force = static_cast<force *>(malloc(sizeof(double) * number_particles));
 
         particles_soa.mass = static_cast<double *>(malloc(sizeof(double) * number_particles));
 #endif
@@ -196,7 +196,7 @@ namespace cadlabs {
 
         double *x_pos = particles_soa.x_pos, *y_pos = particles_soa.y_pos;
         double *x_vel = particles_soa.x_vel, *y_vel = particles_soa.y_vel;
-        double *x_force = particles_soa.x_force, *y_force = particles_soa.y_force;
+        force *x_force = particles_soa.x_force, *y_force = particles_soa.y_force;
         double *mass = particles_soa.mass;
         int i=0, j=0;
 
@@ -248,7 +248,7 @@ namespace cadlabs {
 
         double *x_pos = particles_soa.x_pos, *y_pos = particles_soa.y_pos;
         double *x_vel = particles_soa.x_vel, *y_vel = particles_soa.y_vel;
-        double *x_force = particles_soa.x_force, *y_force = particles_soa.y_force;
+        force *x_force = particles_soa.x_force, *y_force = particles_soa.y_force;
         double *mass = particles_soa.mass;
 
     /* then move all particle_soa and return statistics */
