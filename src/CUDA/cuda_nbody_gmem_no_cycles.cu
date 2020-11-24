@@ -50,15 +50,15 @@ namespace cadlabs {
 
     cuda_nbody_gmem_no_cycles::~cuda_nbody_gmem_no_cycles() {
 #ifdef SOA
-        free(particles_soa.mass);
+        cudaFree(gpu_particles_soa.mass);
 
-        free(particles_soa.x_pos);
-        free(particles_soa.x_vel);
-        free(particles_soa.x_force);
+        cudaFree(gpu_particles_soa.x_pos);
+        cudaFree(gpu_particles_soa.x_vel);
+        cudaFree(gpu_particles_soa.x_force);
 
-        free(particles_soa.y_pos);
-        free(particles_soa.y_vel);
-        free(particles_soa.y_force);
+        cudaFree(gpu_particles_soa.y_pos);
+        cudaFree(gpu_particles_soa.y_vel);
+        cudaFree(gpu_particles_soa.y_force);
 #else
         cudaFree(gpu_particles);
 #endif

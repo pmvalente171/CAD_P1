@@ -51,15 +51,15 @@ namespace cadlabs {
     cuda_nbody_first::~cuda_nbody_first() {
 #ifdef SOA
         cudaFree(gpu_particles_soa.x_pos);
-    cudaFree(gpu_particles_soa.y_pos);
+        cudaFree(gpu_particles_soa.y_pos);
 
-    cudaFree(gpu_particles_soa.x_vel);
-    cudaFree(gpu_particles_soa.y_vel);
+        cudaFree(gpu_particles_soa.x_vel);
+        cudaFree(gpu_particles_soa.y_vel);
 
-    cudaFree(gpu_particles_soa.x_force);
-    cudaFree(gpu_particles_soa.y_force);
+        cudaFree(gpu_particles_soa.x_force);
+        cudaFree(gpu_particles_soa.y_force);
 
-    cudaFree(gpu_particles_soa.mass);
+        cudaFree(gpu_particles_soa.mass);
 #else
         cudaFree(gpu_particles);
 #endif
