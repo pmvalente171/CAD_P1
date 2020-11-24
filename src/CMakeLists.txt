@@ -2,3 +2,4 @@
 add_subdirectory(Seq)
 add_subdirectory(lab2)
 add_subdirectory(Cuda2CyclesKernel7)
+add_subdirectory(CUDA1CycleParallel)
