@@ -1,4 +1,4 @@
 
-add_subdirectory(lab1)
+add_subdirectory(Seq)
 add_subdirectory(lab2)
-add_subdirectory(lab3)
+add_subdirectory(Cuda2CyclesKernel7)
