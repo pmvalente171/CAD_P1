@@ -34,8 +34,8 @@ namespace cadlabs {
         cudaMalloc((void **)&gpu_particles_soa.x_vel, number_particles*sizeof(double));
         cudaMalloc((void **)&gpu_particles_soa.y_vel, number_particles*sizeof(double));
 
-        cudaMalloc((void **)&gpu_particles_soa.x_force, number_particles*sizeof(double));
-        cudaMalloc((void **)&gpu_particles_soa.y_force, number_particles*sizeof(double));
+        cudaMalloc((void **)&gpu_particles_soa.x_force, number_particles*sizeof(force));
+        cudaMalloc((void **)&gpu_particles_soa.y_force, number_particles*sizeof(force));
 
         cudaMalloc((void **)&gpu_particles_soa.mass, number_particles*sizeof(double));
 

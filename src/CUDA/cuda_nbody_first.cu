@@ -31,8 +31,8 @@ namespace cadlabs {
     cudaMalloc((void **)&gpu_particles_soa.x_vel, number_particles*sizeof(double));
     cudaMalloc((void **)&gpu_particles_soa.y_vel, number_particles*sizeof(double));
 
-    cudaMalloc((void **)&gpu_particles_soa.x_force, number_particles*sizeof(double));
-    cudaMalloc((void **)&gpu_particles_soa.y_force, number_particles*sizeof(double));
+    cudaMalloc((void **)&gpu_particles_soa.x_force, number_particles*sizeof(force));
+    cudaMalloc((void **)&gpu_particles_soa.y_force, number_particles*sizeof(force));
 
     cudaMalloc((void **)&gpu_particles_soa.mass, number_particles*sizeof(double));
 
@@ -136,16 +136,18 @@ namespace cadlabs {
     // change our algorithm
 
     uint count = number_particles * sizeof(double);
+    uint f_count = number_particles * sizeof(force);
     cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, count, cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, count, cudaMemcpyHostToDevice);
 
-    nbody_kernel_soa<<<number_blocks_width, blockWidth>>>(
+
+        nbody_kernel_soa<<<number_blocks_width, blockWidth>>>(
             gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
             gpu_particles_soa.x_force, gpu_particles_soa.y_force,
             gpu_particles_soa.mass, number_particles);
 
-    cudaMemcpy(particles_soa.x_force, gpu_particles_soa.x_force, count, cudaMemcpyDeviceToHost);
-    cudaMemcpy(particles_soa.y_force, gpu_particles_soa.y_force, count, cudaMemcpyDeviceToHost);
+    cudaMemcpy(particles_soa.x_force, gpu_particles_soa.x_force, f_count, cudaMemcpyDeviceToHost);
+    cudaMemcpy(particles_soa.y_force, gpu_particles_soa.y_force, f_count, cudaMemcpyDeviceToHost);
 }
 #else
     void cuda_nbody_first::calculate_forces() {

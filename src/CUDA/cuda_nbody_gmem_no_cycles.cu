@@ -93,8 +93,6 @@ namespace cadlabs {
         int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
 
         if (targetParticle < number_particles && forceEffectParticle < number_particles) {
-            // particle_t *tp = &particles[targetParticle];
-            // particle_t *fp = &particles[forceEffectParticle];
 
             double x_sep = x_pos[forceEffectParticle] - x_pos[targetParticle];
             double y_sep = y_pos[forceEffectParticle] - y_pos[targetParticle];
