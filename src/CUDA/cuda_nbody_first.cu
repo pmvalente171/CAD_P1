@@ -5,7 +5,7 @@
 #include <nbody/cuda_nbody_first.h>
 
 static constexpr int thread_block_size = 256;
-int number_blocks = 1;
+int number_blocks_width = 1;
 
 namespace cadlabs {
 
@@ -21,7 +21,7 @@ namespace cadlabs {
             nbody(number_particles, t_final, universe, universe_seed, file_name),
             blockWidth(blockWidth), n(n), numStreams(n_streams)    {
 
-        number_blocks = (number_particles + thread_block_size - 1)/thread_block_size;
+        number_blocks_width = (number_particles + blockWidth - 1) / blockWidth;
 
 #ifdef SOA
         // cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
@@ -94,7 +94,8 @@ namespace cadlabs {
         }
     }
 
-    __global__ void nbody_kernel_soa (const double * __restrict__ x_pos, const double * __restrict__ y_pos,
+    __global__
+    void nbody_kernel_soa (const double * __restrict__ x_pos, const double * __restrict__ y_pos,
                                       double * __restrict__ x_force, double * __restrict__ y_force,
                                       const double * __restrict__ mass, const unsigned number_particles) {
         unsigned index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -148,7 +149,7 @@ namespace cadlabs {
     void cuda_nbody_first::calculate_forces() {
         uint count = number_particles * sizeof(particle_t);
         cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
-        nbody_kernel<<<number_blocks, thread_block_size>>>(gpu_particles, number_particles);
+        nbody_kernel<<<number_blocks_width, blockWidth>>>(gpu_particles, number_particles);
         cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
     }
 #endif

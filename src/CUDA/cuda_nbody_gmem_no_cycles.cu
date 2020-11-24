@@ -1,13 +1,10 @@
-/**
- * Hervé Paulino
- */
-
 #include <nbody/cuda_nbody_gmem_no_cycles.h>
 #include <omp.h>
 #include "stdio.h"
 
-static constexpr int thread_block_size = 32;
-int number_blocks;
+// static constexpr int thread_block_size = 32;
+int number_blocks_width;
+int number_blocks_height;
 
 namespace cadlabs {
 
@@ -19,11 +16,13 @@ namespace cadlabs {
             const unsigned universe_seed,
             const string file_name,
             const int blockWidth,
+            const int blockHeight,
             const int n_streams ) :
             nbody(number_particles, t_final, universe, universe_seed, file_name),
-            blockWidth(blockWidth), n(n), numStreams(n_streams)    {
+            blockWidth(blockWidth), blockHeight(blockHeight), n(n), numStreams(n_streams) {
 
-        number_blocks = (number_particles + thread_block_size - 1)/thread_block_size;
+        number_blocks_width = (number_particles + blockWidth - 1) / blockWidth;
+        number_blocks_height = (number_particles + blockHeight - 1) / blockHeight;
         cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
     }
 
@@ -37,12 +36,17 @@ namespace cadlabs {
         if (targetParticle < number_particles && forceEffectParticle < number_particles) {
             particle_t *tp = &particles[targetParticle];
             particle_t *fp = &particles[forceEffectParticle];
+
             double x_sep = fp->x_pos - tp->x_pos;
             double y_sep = fp->y_pos - tp->y_pos;
+
             double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
             double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
+
+#ifdef GMEM_SMEM_I1
             atomicAdd(&(tp->x_force), grav_base * x_sep);
             atomicAdd(&(tp->y_force), grav_base * y_sep);
+#endif
         }
     }
 
@@ -50,7 +54,6 @@ namespace cadlabs {
  * TODO: A CUDA implementation
  */
     void cuda_nbody_gmem_no_cycles::calculate_forces() {
-        // cudaMalloc((void **)&gpu_particles, number_particles*sizeof(particle_t));
         uint count = number_particles * sizeof(particle_t);
 
         /*
@@ -68,11 +71,10 @@ namespace cadlabs {
         }
 
         cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
-        dim3 grid(number_blocks, number_blocks);
-        dim3 block(thread_block_size, thread_block_size);
+        dim3 grid(number_blocks_width, number_blocks_height);
+        dim3 block(blockWidth, blockHeight);
         two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles);
         cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
-        // cudaFree(gpu_particles);
     }
 
 

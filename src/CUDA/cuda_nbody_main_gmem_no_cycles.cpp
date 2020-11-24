@@ -36,10 +36,11 @@ int main(int argc, char**argv) {
     auto universe_seed = 0;
     auto file_name = "";
     auto block_width = 256;
+    auto block_height = 2;
     auto n_streams = 5;
 
     int c;
-    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:d:w:o:")) != -1)
+    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:d:w:h:o:")) != -1)
         switch (c) {
             case 't':
                 T_FINAL = atof(optarg);
@@ -69,6 +70,10 @@ int main(int argc, char**argv) {
                 block_width = atoi(optarg);
                 break;
 
+            case 'h':
+                block_height = atoi(optarg);
+                break;
+
             case 'o':
                 n_streams = atoi(optarg);
                 break;
@@ -78,9 +83,12 @@ int main(int argc, char**argv) {
                 exit(1);
         }
 
-    cadlabs::cuda_nbody_gmem_no_cycles nbody(nparticles, T_FINAL, n, universe, universe_seed, file_name, block_width, n_streams);
-    marrow::timer<> t;
+    cadlabs::cuda_nbody_gmem_no_cycles nbody(
+            nparticles, T_FINAL, n, universe,
+            universe_seed, file_name, block_width,
+            block_height, n_streams);
 
+    marrow::timer<> t;
     for (int i = 0; i < number_of_runs; i++) {
         std::cout << "Simulation #" << i << "\n";
         t.start();

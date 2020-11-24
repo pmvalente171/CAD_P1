@@ -35,6 +35,7 @@ namespace cadlabs {
                 unsigned universe_seed = 0,
                 string file_name = "",
                 int blockWidth = 256,
+                int blockHeight = 2,
                 int n_streams = 2);
 
         ~cuda_nbody_smem_no_cycles();
@@ -55,6 +56,8 @@ namespace cadlabs {
         const unsigned n;
 
         const unsigned blockWidth;
+
+        const unsigned blockHeight;
 
         const unsigned numStreams;
 

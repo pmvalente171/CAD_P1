@@ -41,8 +41,8 @@ add_executable(${CUDA_NBODY_ALL_PAIRS_GMEM_NO_CYCLES}
                   ${NBODY_SOURCES} cuda_nbody_gmem_no_cycles.cu cuda_nbody_main_gmem_no_cycles.cpp)
 add_executable(${CUDA_NBODY_ALL_PAIRS_FIRST}
                   ${NBODY_SOURCES} cuda_nbody_first.cu cuda_nbody_main_first.cpp)
-# add_executable(${CUDA_NBODY_ALL_PAIRS_SMEM_NO_CYCLES}
-#                     ${NBODY_SOURCES} cuda_nbody_smem_no_cycles.cu cuda_nbody_main_smem_no_cycles.cpp)
+add_executable(${CUDA_NBODY_ALL_PAIRS_SMEM_NO_CYCLES}
+                    ${NBODY_SOURCES} cuda_nbody_smem_no_cycles.cu cuda_nbody_main_smem_no_cycles.cpp)
 
 if (${DISPLAY})
     target_compile_definitions(${CUDA_NBODY_ALL_PAIRS} PRIVATE "-DDISPLAY")
