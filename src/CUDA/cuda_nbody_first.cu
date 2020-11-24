@@ -4,7 +4,7 @@
 
 #include <nbody/cuda_nbody_first.h>
 
-static constexpr int thread_block_size = 256;
+// static constexpr int thread_block_size = 256;
 int number_blocks_width = 1;
 
 namespace cadlabs {
@@ -139,7 +139,7 @@ namespace cadlabs {
     cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, count, cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, count, cudaMemcpyHostToDevice);
 
-    nbody_kernel_soa<<<number_blocks_width, thread_block_size>>>(
+    nbody_kernel_soa<<<number_blocks_width, blockWidth>>>(
             gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
             gpu_particles_soa.x_force, gpu_particles_soa.y_force,
             gpu_particles_soa.mass, number_particles);
