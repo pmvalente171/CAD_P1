@@ -35,6 +35,7 @@ namespace cadlabs {
                 const unsigned universe_seed = 0,
                 const string file_name = "",
                 int blockWidth = 256,
+                int blockHeight = 2,
                 int n_streams = 2);
 
         ~cuda_nbody_all_pairs();
@@ -55,6 +56,8 @@ namespace cadlabs {
         const unsigned n;
 
         const unsigned blockWidth;
+
+        const unsigned blockHeight;
 
         const unsigned numStreams;
 

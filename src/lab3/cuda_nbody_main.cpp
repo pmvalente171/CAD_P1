@@ -36,10 +36,11 @@ int main(int argc, char**argv) {
     auto universe_seed = 0;
     auto file_name = "";
     auto block_width = 256;
+    auto block_height = 2;
     auto n_streams = 5;
 
     int c;
-    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:d:w:o:")) != -1)
+    while ((c = getopt(argc-1, argv+1, "t:u:s:#:n:d:w:h:o:")) != -1)
         switch (c) {
             case 't':
                 T_FINAL = atof(optarg);
@@ -68,7 +69,9 @@ int main(int argc, char**argv) {
             case 'w':
                 block_width = atoi(optarg);
                 break;
-
+            case 'h':
+                block_height = atoi(optarg);
+                break;
             case 'o':
                 n_streams = atoi(optarg);
                 break;
