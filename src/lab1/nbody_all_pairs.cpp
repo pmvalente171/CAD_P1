@@ -340,6 +340,15 @@ namespace cadlabs {
         }
     }
 
+#ifdef SOA
+    void nbody::print_all_particles(std::ostream &out) {
+        for (int i = 0; i < number_particles; i++) {
+            out << "particle={pos=(" << particles_soa.x_pos[i] << "," << particles_soa.y_pos[i] << "), vel=("
+                << particles_soa.x_vel[i] << "," << particles_soa.y_vel[i] << ")}\n";
+        }
+    }
+
+#else
     void nbody::print_all_particles(std::ostream &out) {
         for (int i = 0; i < number_particles; i++) {
             particle_t *p = &particles[i];
@@ -347,6 +356,7 @@ namespace cadlabs {
                 << p->x_vel << "," << p->y_vel << ")}\n";
         }
     }
+#endif
 
     void nbody::run_simulation() {
         double t = 0.0, dt = 0.01;

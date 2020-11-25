@@ -3,9 +3,6 @@
 #include <stdio.h>
 
 
-// static constexpr int BLOCK_HEIGHT = 2;
-//constexpr uint numStreams = 1;
-
 namespace cadlabs {
 
     cuda_nbody_all_pairs::cuda_nbody_all_pairs(
@@ -78,10 +75,12 @@ namespace cadlabs {
 
     //STREAM IMPLEMENTATION WITH ARRAYS OF STRUCTURES
     template<unsigned int blockSize, unsigned int blockHeight>
-    __global__ void calculate_forces_two_cycles_parallel(particle_t * __restrict__ particles, const unsigned int targetOffset,
-                                     double * __restrict__ gForcesX, double * __restrict__ gForcesY,
-                                     const unsigned int number_particles,
-                                     const unsigned int gridWidth, const unsigned int n) {
+    __global__
+    void calculate_forces_two_cycles_parallel(
+            particle_t * __restrict__ particles, const unsigned int targetOffset,
+            double * __restrict__ gForcesX, double * __restrict__ gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth, const unsigned int n) {
 
         __shared__ double sForcesX[blockHeight * blockSize];
         __shared__ double sForcesY[blockHeight * blockSize];
@@ -220,7 +219,7 @@ namespace cadlabs {
         }
     }
 
-    template<unsigned int blockSize>
+    template<unsigned int blockSize, unsigned int blockHeight>
     __global__ void calculate_forces_two_cycles_parallel_soa(
             const double * __restrict__ x_pos, const double * __restrict__ y_pos,
             const double * __restrict__ mass, const unsigned int target_offset,
@@ -228,8 +227,8 @@ namespace cadlabs {
             const unsigned int number_particles,
             const unsigned int gridWidth, const unsigned int n) {
 
-        __shared__ double sForcesX[1 * blockSize];
-        __shared__ double sForcesY[1 * blockSize];
+        __shared__ double sForcesX[blockHeight * blockSize];
+        __shared__ double sForcesY[blockHeight * blockSize];
 
         unsigned int forceParticle  = blockIdx.x * 2 * blockDim.x + threadIdx.x;
         unsigned int targetParticle = blockIdx.y * blockDim.y + threadIdx.y + target_offset;
@@ -367,202 +366,881 @@ namespace cadlabs {
     }
 
 #ifdef SOA
-    // Having this in a separate method for this
-    // might lead to a small performance loss
-    static void call_kernel_soa(
-            int block_width,
+    static void call_kernel_1(
+            int block_height,
             const double * x_pos, const double * y_pos,
             const double * mass, const int target_offset,
             double * gForcesX, double * gForcesY,
             const unsigned int number_particles,
-            const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block) {
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
 
-        switch (block_width) {
+        switch (block_height) {
             case 1024:
-                calculate_forces_two_cycles_parallel_soa<1024><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                            number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 1024><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
             case 512:
-                calculate_forces_two_cycles_parallel_soa<512><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                           number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 512><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
             case 256:
-                calculate_forces_two_cycles_parallel_soa<256><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                           number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 256><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
             case 128:
-                calculate_forces_two_cycles_parallel_soa<128><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                           number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 128><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
             case 64:
-                calculate_forces_two_cycles_parallel_soa<64><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                          number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 64><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
             case 32:
-                calculate_forces_two_cycles_parallel_soa<32><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                          number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 32><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
             case 16:
-                calculate_forces_two_cycles_parallel_soa<16><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                          number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 16><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
             case 8:
-                calculate_forces_two_cycles_parallel_soa<8><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                         number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 8><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
             case 4:
-                calculate_forces_two_cycles_parallel_soa<4><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                         number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 4><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
             case 2:
-                calculate_forces_two_cycles_parallel_soa<2><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                         number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 2><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
             case 1:
-                calculate_forces_two_cycles_parallel_soa<1><<<grid, block>>>(x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
-                                                                         number_particles, gridWidth, n);
+                calculate_forces_two_cycles_parallel_soa<1, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
                 break;
         }
     }
 
-#else
+    static void call_kernel_2(
+            int block_height,
+            const double * x_pos, const double * y_pos,
+            const double * mass, const int target_offset,
+            double * gForcesX, double * gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
 
-    template <unsigned int block_width>
-    static void call_kernel(
+        switch (block_height) {
+            case 512:
+                calculate_forces_two_cycles_parallel_soa<2, 512><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 256:
+                calculate_forces_two_cycles_parallel_soa<2, 256><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 128:
+                calculate_forces_two_cycles_parallel_soa<2, 128><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 64:
+                calculate_forces_two_cycles_parallel_soa<2, 64><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 32:
+                calculate_forces_two_cycles_parallel_soa<2, 32><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel_soa<2, 16><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel_soa<2, 8><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel_soa<2, 4><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel_soa<2, 2><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel_soa<2, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+        }
+    }
+
+    static void call_kernel_3(
+            int block_height,
+            const double * x_pos, const double * y_pos,
+            const double * mass, const int target_offset,
+            double * gForcesX, double * gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 256:
+                calculate_forces_two_cycles_parallel_soa<4, 256><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 128:
+                calculate_forces_two_cycles_parallel_soa<4, 128><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 64:
+                calculate_forces_two_cycles_parallel_soa<4, 64><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 32:
+                calculate_forces_two_cycles_parallel_soa<4, 32><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel_soa<2, 16><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel_soa<4, 8><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel_soa<4, 4><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel_soa<4, 2><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel_soa<4, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+        }
+    }
+
+    static void call_kernel_4(
+            int block_height,
+            const double * x_pos, const double * y_pos,
+            const double * mass, const int target_offset,
+            double * gForcesX, double * gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 128:
+                calculate_forces_two_cycles_parallel_soa<8, 128><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 64:
+                calculate_forces_two_cycles_parallel_soa<8, 64><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 32:
+                calculate_forces_two_cycles_parallel_soa<8, 32><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel_soa<8, 16><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel_soa<8, 8><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel_soa<8, 4><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel_soa<8, 2><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel_soa<8, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+        }
+    }
+
+
+    static void call_kernel_5(
+            int block_height,
+            const double * x_pos, const double * y_pos,
+            const double * mass, const int target_offset,
+            double * gForcesX, double * gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 64:
+                calculate_forces_two_cycles_parallel_soa<16, 64><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 32:
+                calculate_forces_two_cycles_parallel_soa<16, 32><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel_soa<16, 16><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel_soa<16, 8><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel_soa<16, 4><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel_soa<16, 2><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel_soa<16, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+        }
+    }
+
+    static void call_kernel_6(
+            int block_height,
+            const double * x_pos, const double * y_pos,
+            const double * mass, const int target_offset,
+            double * gForcesX, double * gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 32:
+                calculate_forces_two_cycles_parallel_soa<32, 32><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel_soa<32, 16><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel_soa<32, 8><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel_soa<32, 4><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel_soa<32, 2><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel_soa<32, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+        }
+    }
+
+    static void call_kernel_7(
+            int block_height,
+            const double * x_pos, const double * y_pos,
+            const double * mass, const int target_offset,
+            double * gForcesX, double * gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 16:
+                calculate_forces_two_cycles_parallel_soa<64, 16><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel_soa<64, 8><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel_soa<64, 4><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel_soa<64, 2><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel_soa<64, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+        }
+    }
+
+    static void call_kernel_8(
+            int block_height,
+            const double * x_pos, const double * y_pos,
+            const double * mass, const int target_offset,
+            double * gForcesX, double * gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 8:
+                calculate_forces_two_cycles_parallel_soa<128, 8><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel_soa<128, 4><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel_soa<128, 2><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel_soa<128, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+        }
+    }
+
+    static void call_kernel_9(
+            int block_height,
+            const double * x_pos, const double * y_pos,
+            const double * mass, const int target_offset,
+            double * gForcesX, double * gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 4:
+                calculate_forces_two_cycles_parallel_soa<256, 4><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel_soa<256, 2><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel_soa<256, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+        }
+    }
+
+    static void call_kernel_10(
+            int block_height,
+            const double * x_pos, const double * y_pos,
+            const double * mass, const int target_offset,
+            double * gForcesX, double * gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 2:
+                calculate_forces_two_cycles_parallel_soa<512, 2><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel_soa<512, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+        }
+    }
+
+    // Having this in a separate method for this
+    // might lead to a small performance loss
+    static void call_kernel_soa(
+            int block_width, int block_height,
+            const double * x_pos, const double * y_pos,
+            const double * mass, const int target_offset,
+            double * gForcesX, double * gForcesY,
+            const unsigned int number_particles,
+            const unsigned int gridWidth,
+            const unsigned int n, dim3 grid,
+            dim3 block, cudaStream_t stream) {
+
+        switch (block_width) {
+            case 1024:
+                calculate_forces_two_cycles_parallel_soa<1024, 1><<<grid, block, 0, stream>>>(
+                        x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                        number_particles, gridWidth, n);
+                break;
+            case 512:
+                call_kernel_10(block_height, x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                               number_particles, gridWidth, n, grid, block, stream);
+                break;
+            case 256:
+                call_kernel_9(block_height, x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                              number_particles, gridWidth, n, grid, block, stream);
+                break;
+            case 128:
+                call_kernel_8(block_height, x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                              number_particles, gridWidth, n, grid, block, stream);
+                break;
+            case 64:
+                call_kernel_7(block_height, x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                              number_particles, gridWidth, n, grid, block, stream);
+                break;
+            case 32:
+                call_kernel_6(block_height, x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                              number_particles, gridWidth, n, grid, block, stream);
+                break;
+            case 16:
+                call_kernel_5(block_height, x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                              number_particles, gridWidth, n, grid, block, stream);
+                break;
+            case 8:
+                call_kernel_4(block_height, x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                              number_particles, gridWidth, n, grid, block, stream);
+                break;
+            case 4:
+                call_kernel_3(block_height, x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                              number_particles, gridWidth, n, grid, block, stream);
+                break;
+            case 2:
+                call_kernel_2(block_height, x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                              number_particles, gridWidth, n, grid, block, stream);
+                break;
+            case 1:
+                call_kernel_1(block_height, x_pos, y_pos, mass, target_offset, gForcesX, gForcesY,
+                              number_particles, gridWidth, n, grid, block, stream);
+                break;
+        }
+    }
+#else
+    static void call_kernel_1(
             int block_height, particle_t *particles, int targetOffset, double *gForcesX,
             double *gForcesY, const unsigned int number_particles,
             const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block, cudaStream_t stream) {
 
-        if (block_width <= 1) {
-            if (block_height == 1024) {
-                calculate_forces_two_cycles_parallel<block_width, 1024><<<grid, block, 0, stream>>>(particles,
-                                                                                                    targetOffset,
-                                                                                                    gForcesX,
-                                                                                                    gForcesY,
-                                                                                                    number_particles,
-                                                                                                    gridWidth, n);
-                return;
-            }
+        switch (block_height) {
+            case 1024:
+                calculate_forces_two_cycles_parallel<1, 1024><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 512:
+                calculate_forces_two_cycles_parallel<1, 512><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 256:
+                calculate_forces_two_cycles_parallel<1, 256><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 128:
+                calculate_forces_two_cycles_parallel<1, 128><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 64:
+                calculate_forces_two_cycles_parallel<1, 64><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 32:
+                calculate_forces_two_cycles_parallel<1, 32><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel<1, 16><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel<1, 8><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel<1, 4><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel<1, 2><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel<1, 1><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
         }
+    }
 
-        if (block_width <= 2) {
-            if(block_height == 512) {
-                calculate_forces_two_cycles_parallel<block_width, 512><<<grid, block, 0, stream>>>(particles,
-                                                                                                   targetOffset,
-                                                                                                   gForcesX,
-                                                                                                   gForcesY,
-                                                                                                   number_particles,
-                                                                                                   gridWidth, n);
-                return;
-            }
+    static void call_kernel_2(
+            int block_height, particle_t *particles, int targetOffset, double *gForcesX,
+            double *gForcesY, const unsigned int number_particles,
+            const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 512:
+                calculate_forces_two_cycles_parallel<2, 512><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 256:
+                calculate_forces_two_cycles_parallel<2, 256><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 128:
+                calculate_forces_two_cycles_parallel<2, 128><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 64:
+                calculate_forces_two_cycles_parallel<2, 64><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 32:
+                calculate_forces_two_cycles_parallel<2, 32><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel<2, 16><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel<2, 8><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel<2, 4><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel<2, 2><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel<2, 1><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
         }
+    }
 
-        if (block_width <= 4) {
-            if(block_height == 256) {
-                calculate_forces_two_cycles_parallel<block_width, 256><<<grid, block, 0, stream>>>(particles,
-                                                                                                   targetOffset,
-                                                                                                   gForcesX,
-                                                                                                   gForcesY,
-                                                                                                   number_particles,
-                                                                                                   gridWidth, n);
-                return;
-            }
+    static void call_kernel_3(
+            int block_height, particle_t *particles, int targetOffset, double *gForcesX,
+            double *gForcesY, const unsigned int number_particles,
+            const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 256:
+                calculate_forces_two_cycles_parallel<4, 256><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 128:
+                calculate_forces_two_cycles_parallel<4, 128><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 64:
+                calculate_forces_two_cycles_parallel<4, 64><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 32:
+                calculate_forces_two_cycles_parallel<4, 32><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel<2, 16><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel<4, 8><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel<4, 4><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel<4, 2><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel<4, 1><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
         }
+    }
 
-        if (block_width <= 8) {
-            if(block_height == 128) {
-                calculate_forces_two_cycles_parallel<block_width, 128><<<grid, block, 0, stream>>>(particles,
-                                                                                                   targetOffset,
-                                                                                                   gForcesX,
-                                                                                                   gForcesY,
-                                                                                                   number_particles,
-                                                                                                   gridWidth, n);
-                return;
-            }
+    static void call_kernel_4(
+            int block_height, particle_t *particles, int targetOffset, double *gForcesX,
+            double *gForcesY, const unsigned int number_particles,
+            const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 128:
+                calculate_forces_two_cycles_parallel<8, 128><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 64:
+                calculate_forces_two_cycles_parallel<8, 64><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 32:
+                calculate_forces_two_cycles_parallel<8, 32><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel<8, 16><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel<8, 8><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel<8, 4><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel<8, 2><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel<8, 1><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
         }
+    }
 
-        if (block_width <= 16) {
-            if (block_height == 64) {
-                calculate_forces_two_cycles_parallel<block_width, 64><<<grid, block, 0, stream>>>(particles,
-                                                                                                  targetOffset,
-                                                                                                  gForcesX,
-                                                                                                  gForcesY,
-                                                                                                  number_particles,
-                                                                                                  gridWidth, n);
-                return;
-            }
+
+    static void call_kernel_5(
+            int block_height, particle_t *particles, int targetOffset, double *gForcesX,
+            double *gForcesY, const unsigned int number_particles,
+            const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 64:
+                calculate_forces_two_cycles_parallel<16, 64><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 32:
+                calculate_forces_two_cycles_parallel<16, 32><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel<16, 16><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel<16, 8><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel<16, 4><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel<16, 2><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel<16, 1><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
         }
+    }
 
-        if (block_width <= 32) {
-            if (block_height == 32) {
-                calculate_forces_two_cycles_parallel<block_width, 32><<<grid, block, 0, stream>>>(particles,
-                                                                                                  targetOffset,
-                                                                                                  gForcesX,
-                                                                                                  gForcesY,
-                                                                                                  number_particles,
-                                                                                                  gridWidth, n);
-                return;
-            }
+    static void call_kernel_6(
+            int block_height, particle_t *particles, int targetOffset, double *gForcesX,
+            double *gForcesY, const unsigned int number_particles,
+            const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 32:
+                calculate_forces_two_cycles_parallel<32, 32><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 16:
+                calculate_forces_two_cycles_parallel<32, 16><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel<32, 8><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel<32, 4><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel<32, 2><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel<32, 1><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
         }
+    }
 
-        if (block_width <= 64) {
-            if (block_height == 16) {
-                calculate_forces_two_cycles_parallel<block_width, 16><<<grid, block, 0, stream>>>(particles,
-                                                                                                  targetOffset,
-                                                                                                  gForcesX,
-                                                                                                  gForcesY,
-                                                                                                  number_particles,
-                                                                                                  gridWidth, n);
-                return;
-            }
+    static void call_kernel_7(
+            int block_height, particle_t *particles, int targetOffset, double *gForcesX,
+            double *gForcesY, const unsigned int number_particles,
+            const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 16:
+                calculate_forces_two_cycles_parallel<64, 16><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 8:
+                calculate_forces_two_cycles_parallel<64, 8><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel<64, 4><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel<64, 2><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel<64, 1><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
         }
+    }
 
-        if (block_width <= 128) {
-            if(block_height == 8) {
-                calculate_forces_two_cycles_parallel<block_width, 8><<<grid, block, 0, stream>>>(particles,
-                                                                                                 targetOffset,
-                                                                                                 gForcesX,
-                                                                                                 gForcesY,
-                                                                                                 number_particles,
-                                                                                                 gridWidth, n);
-                return;
-            }
+    static void call_kernel_8(
+            int block_height, particle_t *particles, int targetOffset, double *gForcesX,
+            double *gForcesY, const unsigned int number_particles,
+            const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 8:
+                calculate_forces_two_cycles_parallel<128, 8><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 4:
+                calculate_forces_two_cycles_parallel<128, 4><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel<128, 2><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel<128, 1><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
         }
+    }
 
-        if (block_width <= 256) {
-            if (block_height == 4) {
-                calculate_forces_two_cycles_parallel<block_width, 4><<<grid, block, 0, stream>>>(particles,
-                                                                                                 targetOffset,
-                                                                                                 gForcesX,
-                                                                                                 gForcesY,
-                                                                                                 number_particles,
-                                                                                                 gridWidth, n);
-                return;
-            }
+    static void call_kernel_9(
+            int block_height, particle_t *particles, int targetOffset, double *gForcesX,
+            double *gForcesY, const unsigned int number_particles,
+            const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block, cudaStream_t stream) {
+
+        switch (block_height) {
+            case 4:
+                calculate_forces_two_cycles_parallel<256, 4><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 2:
+                calculate_forces_two_cycles_parallel<256, 2><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel<256, 1><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
         }
+    }
 
-        if (block_width <= 512) {
-            if(block_height == 2) {
-                calculate_forces_two_cycles_parallel<block_width, 2><<<grid, block, 0, stream>>>(particles,
-                                                                                                 targetOffset,
-                                                                                                 gForcesX,
-                                                                                                 gForcesY,
-                                                                                                 number_particles,
-                                                                                                 gridWidth, n);
-                return;
-            }
-        }
+    static void call_kernel_10(
+            int block_height, particle_t *particles, int targetOffset, double *gForcesX,
+            double *gForcesY, const unsigned int number_particles,
+            const unsigned int gridWidth, const unsigned int n, dim3 grid, dim3 block, cudaStream_t stream) {
 
-        if (block_width <= 1024) {
-            if (block_width == 1) {
-                calculate_forces_two_cycles_parallel<block_width, 1><<<grid, block, 0, stream>>>(particles,
-                                                                                                 targetOffset,
-                                                                                                 gForcesX,
-                                                                                                 gForcesY,
-                                                                                                 number_particles,
-                                                                                                 gridWidth, n);
-                return;
-            }
+        switch (block_height) {
+            case 2:
+                calculate_forces_two_cycles_parallel<512, 2><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
+            case 1:
+                calculate_forces_two_cycles_parallel<512, 1><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
+                break;
         }
     }
 
@@ -575,52 +1253,51 @@ namespace cadlabs {
 
         switch (block_width) {
             case 1024:
-                call_kernel<1024>(block_height, particles, targetOffset,gForcesX, gForcesY,
-                                  number_particles, gridWidth, n, grid, block, stream);
+                calculate_forces_two_cycles_parallel<1, 1024><<<grid, block, 0, stream>>>(
+                        particles, targetOffset, gForcesX, gForcesY, number_particles, gridWidth, n);
                 break;
             case 512:
-                call_kernel<512>(block_height, particles, targetOffset,gForcesX, gForcesY,
+                call_kernel_10(block_height, particles, targetOffset,gForcesX, gForcesY,
                                   number_particles, gridWidth, n, grid, block, stream);
                 break;
             case 256:
-                call_kernel<256>(block_height, particles, targetOffset,gForcesX, gForcesY,
+                call_kernel_9(block_height, particles, targetOffset,gForcesX, gForcesY,
                                   number_particles, gridWidth, n, grid, block, stream);
                 break;
             case 128:
-                call_kernel<128>(block_height, particles, targetOffset,gForcesX, gForcesY,
+                call_kernel_8(block_height, particles, targetOffset,gForcesX, gForcesY,
                                   number_particles, gridWidth, n, grid, block, stream);
                 break;
             case 64:
-                call_kernel<64>(block_height, particles, targetOffset,gForcesX, gForcesY,
+                call_kernel_7(block_height, particles, targetOffset,gForcesX, gForcesY,
                                   number_particles, gridWidth, n, grid, block, stream);
                 break;
             case 32:
-                call_kernel<32>(block_height, particles, targetOffset,gForcesX, gForcesY,
+                call_kernel_6(block_height, particles, targetOffset,gForcesX, gForcesY,
                                 number_particles, gridWidth, n, grid, block, stream);
                 break;
             case 16:
-                call_kernel<16>(block_height, particles, targetOffset,gForcesX, gForcesY,
+                call_kernel_5(block_height, particles, targetOffset,gForcesX, gForcesY,
                                 number_particles, gridWidth, n, grid, block, stream);
                 break;
             case 8:
-                call_kernel<8>(block_height, particles, targetOffset,gForcesX, gForcesY,
+                call_kernel_4(block_height, particles, targetOffset,gForcesX, gForcesY,
                                 number_particles, gridWidth, n, grid, block, stream);
                 break;
             case 4:
-                call_kernel<4>(block_height, particles, targetOffset,gForcesX, gForcesY,
+                call_kernel_3(block_height, particles, targetOffset,gForcesX, gForcesY,
                                number_particles, gridWidth, n, grid, block, stream);
                 break;
             case 2:
-                call_kernel<2>(block_height, particles, targetOffset,gForcesX, gForcesY,
+                call_kernel_2(block_height, particles, targetOffset,gForcesX, gForcesY,
                                number_particles, gridWidth, n, grid, block, stream);
                 break;
             case 1:
-                call_kernel<1>(block_height, particles, targetOffset,gForcesX, gForcesY,
+                call_kernel_1(block_height, particles, targetOffset,gForcesX, gForcesY,
                                number_particles, gridWidth, n, grid, block, stream);
                 break;
         }
     }
-
 #endif
 
 #ifdef SOA
@@ -628,7 +1305,7 @@ namespace cadlabs {
         cudaStream_t streams[numStreams];
         cudaEvent_t events[numStreams];
         uint size = number_particles * sizeof(double);
-        dim3 block(blockWidth, BLOCK_HEIGHT);
+        dim3 block(blockWidth, blockHeight);
 
         cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, size, cudaMemcpyHostToDevice);
         cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, size, cudaMemcpyHostToDevice);
@@ -640,14 +1317,14 @@ namespace cadlabs {
             unsigned int partialHeight = (gridHeight / numStreams) +
                     (i == numStreams - 1 && (gridHeight % numStreams)) *
                     gridHeight % numStreams;
-            int temp = partialHeight * BLOCK_HEIGHT;
-            int targetOffset = (int)(i * BLOCK_HEIGHT * (gridHeight / numStreams));
+            int temp = partialHeight * blockHeight;
+            int targetOffset = (int)(i * blockHeight * (gridHeight / numStreams));
             dim3 partialGrid(gridWidth, partialHeight);
 
             call_kernel_soa(
-                    blockWidth, gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
+                    blockWidth, blockHeight, gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
                     gpu_particles_soa.mass, targetOffset, dForcesX, dForcesY,
-                    number_particles, gridWidth, n, partialGrid, block);
+                    number_particles, gridWidth, n, partialGrid, block, streams[i]);
 
             cudaMemcpyAsync(&hForcesX[targetOffset], &dForcesX[targetOffset],
                             temp * sizeof(double),
@@ -665,8 +1342,8 @@ namespace cadlabs {
                     (s == numStreams - 1 && (gridHeight % numStreams)) *
                     (gridHeight % numStreams);
 
-            padding *= BLOCK_HEIGHT;
-            unsigned int offset = (int)(s * BLOCK_HEIGHT * (gridHeight / numStreams));
+            padding *= blockHeight;
+            unsigned int offset = (int)(s * blockHeight * (gridHeight / numStreams));
             for (unsigned int i = offset; i < offset + padding; i++) {
                 int targetParticle = i * gridWidth;
                 double xF = 0; double yF = 0;
