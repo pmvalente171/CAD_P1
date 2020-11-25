@@ -9,7 +9,11 @@ set (CUDA_NBODY_SOURCES
         ${SOURCE_FOLDER}/SEQ/get_output.cpp
         ${SOURCE_FOLDER}/SEQ/universe_generation.cpp
         ${SOURCE_FOLDER}/SEQ/nbody_all_pairs.cpp
-        ${SOURCE_FOLDER}/CUDA/cuda_nbody_all_pairs.cu ../../include/nbody/data_types.h)
+        ${SOURCE_FOLDER}/CUDA/cuda_nbody_all_pairs.cu
+        # ${SOURCE_FOLDER}/CUDA/cuda_nbody_gmem_no_cycles.cu
+        # ${SOURCE_FOLDER}/CUDA/cuda_nbody_smem_no_cycles.cu
+        ${SOURCE_FOLDER}/CUDA/cuda_nbody_first.cu
+        ../../include/nbody/data_types.h)
 
 set (TEST_SOURCES
         vector_add_cuda_test.cu

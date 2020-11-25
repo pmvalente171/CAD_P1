@@ -2,9 +2,7 @@
 #include <omp.h>
 #include "stdio.h"
 
-// static constexpr int thread_block_size = 32;
-int number_blocks_width;
-int number_blocks_height;
+// constexpr int n1 = 6;
 
 namespace cadlabs {
 
@@ -64,45 +62,75 @@ namespace cadlabs {
 #endif
     }
 
-    __global__ void two_cycles_parallel(particle_t* particles, const unsigned number_particles) {
-        int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
-        int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
+    __global__
+    void two_cycles_parallel(
+            particle_t* particles,
+            const unsigned number_particles,
+            const unsigned int n) {
+
+        unsigned int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
+        unsigned int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
+        unsigned int gridSizeY = blockDim.y * gridDim.y;
+
         if (targetParticle < number_particles && forceEffectParticle < number_particles) {
             particle_t *tp = &particles[targetParticle];
-            particle_t *fp = &particles[forceEffectParticle];
+            float x_tot = 0.0, y_tot = 0.0;
+            int i = 0;
 
-            double x_sep = fp->x_pos - tp->x_pos;
-            double y_sep = fp->y_pos - tp->y_pos;
+            while(i < n) {
+                int a = forceEffectParticle < number_particles;
+                particle_t *fp = &particles[forceEffectParticle];
+                float x_sep = fp->x_pos - tp->x_pos;
+                float y_sep = fp->y_pos - tp->y_pos;
 
-            double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
-            double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
+                double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
+                float grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
 
+                x_tot += a * grav_base * x_sep;
+                y_tot += a * grav_base * y_sep;
+
+                forceEffectParticle += gridSizeY;
+                i++;
+            }
 #ifdef ATOMIC
-            atomicAdd(&(tp->x_force), grav_base * x_sep);
-            atomicAdd(&(tp->y_force), grav_base * y_sep);
+            atomicAdd(&(tp->x_force), x_tot);
+            atomicAdd(&(tp->y_force), y_tot);
 #endif
         }
     }
 
-    __global__ void two_cycles_parallel_soa (
+    __global__
+    void two_cycles_parallel_soa (
             const double * __restrict__ x_pos, const double * __restrict__ y_pos,
             force * __restrict__ x_force, force * __restrict__ y_force,
-            const double * __restrict__ mass, const unsigned number_particles) {
+            const double * __restrict__ mass, const unsigned number_particles,
+            const unsigned int n) {
 
-        int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
-        int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
+        unsigned int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
+        unsigned int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
+        unsigned int gridSizeY = blockDim.y * gridDim.y;
 
         if (targetParticle < number_particles && forceEffectParticle < number_particles) {
+            float x_tot = 0.0, y_tot = 0.0;
+            int i = 0;
 
-            double x_sep = x_pos[forceEffectParticle] - x_pos[targetParticle];
-            double y_sep = y_pos[forceEffectParticle] - y_pos[targetParticle];
+            while(i < n) {
+                int a = forceEffectParticle < number_particles;
+                float x_sep = x_pos[forceEffectParticle] - x_pos[targetParticle];
+                float y_sep = y_pos[forceEffectParticle] - y_pos[targetParticle];
 
-            double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
-            double grav_base = GRAV_CONSTANT * (mass[forceEffectParticle]) * (mass[targetParticle]) / dist_sq;
+                double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
+                float grav_base = GRAV_CONSTANT * (mass[forceEffectParticle]) * (mass[targetParticle]) / dist_sq;
 
+                x_tot += a * grav_base * x_sep;
+                y_tot += a * grav_base * y_sep;
+
+                forceEffectParticle += gridSizeY;
+                i++;
+            }
 #ifdef ATOMIC
-            atomicAdd(&(x_force[targetParticle]), grav_base * x_sep);
-            atomicAdd(&(y_force[targetParticle]), grav_base * y_sep);
+            atomicAdd(&(x_force[targetParticle]), x_tot);
+            atomicAdd(&(y_force[targetParticle]), y_tot);
 #endif
         }
     }
@@ -130,13 +158,14 @@ namespace cadlabs {
         cudaMemcpy(gpu_particles_soa.x_force, particles_soa.x_force, f_count, cudaMemcpyHostToDevice);
         cudaMemcpy(gpu_particles_soa.y_force, particles_soa.y_force, f_count, cudaMemcpyHostToDevice);
 
-        dim3 grid(number_blocks_width, number_blocks_height);
+        unsigned int temp = (number_blocks_height / n) + ((number_blocks_height % n) != 0);
+        dim3 grid(number_blocks_width, temp);
         dim3 block(blockWidth, blockHeight);
 
         two_cycles_parallel_soa<<<grid, block>>>(
                 gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
                 gpu_particles_soa.x_force, gpu_particles_soa.y_force,
-                gpu_particles_soa.mass, number_particles);
+                gpu_particles_soa.mass, number_particles, n);
 
         cudaMemcpy(particles_soa.x_force, gpu_particles_soa.x_force, f_count, cudaMemcpyDeviceToHost);
         cudaMemcpy(particles_soa.y_force, gpu_particles_soa.y_force, f_count, cudaMemcpyDeviceToHost);
@@ -158,10 +187,11 @@ namespace cadlabs {
             p->y_force = 0;
         }
 
+        unsigned int temp = (number_blocks_height / n) + ((number_blocks_height % n) != 0);
         cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
-        dim3 grid(number_blocks_width, number_blocks_height);
+        dim3 grid(number_blocks_width, temp);
         dim3 block(blockWidth, blockHeight);
-        two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles);
+        two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles, n);
         cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
     }
 #endif

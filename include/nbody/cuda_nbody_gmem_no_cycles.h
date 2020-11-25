@@ -38,7 +38,7 @@ namespace cadlabs {
                 int blockHeight = 2,
                 int n_streams = 2);
 
-        ~cuda_nbody_gmem_no_cycles();
+        ~cuda_nbody_gmem_no_cycles() override;
 
         void print_all_particles(std::ostream &out);
 
@@ -60,6 +60,10 @@ namespace cadlabs {
         const unsigned blockHeight;
 
         const unsigned numStreams;
+
+        int number_blocks_width;
+
+        int number_blocks_height;
 
     };
 }

@@ -5,7 +5,7 @@
 #ifndef CADLABS_GPU_PAR_NBODY_ALL_PAIRS_H
 #define CADLABS_GPU_PAR_NBODY_ALL_PAIRS_H
 
-#include "../nbody.h"
+#include "nbody.h"
 
 namespace cadlabs {
 
@@ -38,7 +38,7 @@ namespace cadlabs {
                 int blockHeight = 2,
                 int n_streams = 2);
 
-        ~cuda_nbody_smem_no_cycles();
+        ~cuda_nbody_smem_no_cycles() override;
 
         void print_all_particles(std::ostream &out);
 

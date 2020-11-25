@@ -2,18 +2,18 @@
 #include <omp.h>
 #include "stdio.h"
 
-static constexpr int thread_block_width = 16;
-static constexpr int thread_block_height = 8;
+static constexpr int thread_block_width = 32;
+static constexpr int thread_block_height = 16;
 
-int number_blocks_width;
-int number_blocks_height;
+int number_blocks_width = 0;
+int number_blocks_height = 0;
 
 namespace cadlabs {
 
     cuda_nbody_smem_no_cycles::cuda_nbody_smem_no_cycles(
             const int number_particles,
             const float t_final,
-            const unsigned number_of_threads,
+            const unsigned n,
             const universe_t universe,
             const unsigned universe_seed,
             const string file_name,
@@ -68,10 +68,16 @@ namespace cadlabs {
     }
 
     __global__
-    void two_cycles_parallel(particle_t* gParticles, const unsigned number_particles) {
+    void two_cycles_parallel(
+            particle_t* gParticles,
+            const unsigned number_particles,
+            const unsigned int n) {
+
         __shared__ particle_t sParticles[thread_block_width];
-        int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
-        int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
+        unsigned int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
+        unsigned int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
+        unsigned int gridSizeY = blockDim.y * gridDim.y;
+
         if (targetParticle < number_particles && forceEffectParticle < number_particles) {
 
             /*
@@ -93,31 +99,40 @@ namespace cadlabs {
              */
             __syncthreads();
 
-            particle_t *fp = &gParticles[forceEffectParticle];
             particle_t *tp = &sParticles[threadIdx.x];
+            float x_tot = 0.0, y_tot = 0.0;
+            int i = 0;
 
-            double x_sep = fp->x_pos - tp->x_pos;
-            double y_sep = fp->y_pos - tp->y_pos;
-            double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
-            double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
+            while(i < n) {
+                particle_t *fp = &gParticles[forceEffectParticle];
+                int a = forceEffectParticle < number_particles;
 
+                double x_sep = fp->x_pos - tp->x_pos;
+                double y_sep = fp->y_pos - tp->y_pos;
+
+                double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
+                double grav_base = GRAV_CONSTANT * (fp->mass) * (tp->mass) / dist_sq;
+
+                x_tot += a * grav_base * x_sep;
+                y_tot += a * grav_base * y_sep;
+
+                forceEffectParticle += gridSizeY;
+                i++;
+            }
             /*
              * After computing the forces applied from one particle, these are added to the
              *  value on a local array.
              */
-
 #ifdef ATOMIC
-            atomicAdd(&(tp->x_force), ((float)grav_base * x_sep));
-            atomicAdd(&(tp->y_force), ((float)grav_base * y_sep));
+            atomicAdd(&(tp->x_force), x_tot);
+            atomicAdd(&(tp->y_force), y_tot);
 #endif
             __syncthreads();
-
             /*
              * Upon having computed the total forces applied to a particle in this block
              *  these are added to the global view of the particle.
              */
             if (!threadIdx.y) {
-
 #ifdef ATOMIC
                 atomicAdd(&(gParticles[targetParticle].x_force), tp->x_force);
                 atomicAdd(&(gParticles[targetParticle].y_force), tp->y_force);
@@ -129,18 +144,18 @@ namespace cadlabs {
     __global__ void two_cycles_parallel_soa(
             const double * x_pos, const double * y_pos,
             force * x_force, force * y_force,
-            const double * mass, const unsigned number_particles) {
+            const double * mass, const unsigned number_particles,
+            const unsigned int n) {
 
         __shared__ force smem_x_force[thread_block_width];
         __shared__ force smem_y_force[thread_block_width];
+        __shared__ double smem_x_pos[thread_block_width];
+        __shared__ double smem_y_pos[thread_block_width];
+        __shared__ double smem_mass[thread_block_width];
 
-        __shared__ force smem_x_pos[thread_block_width];
-        __shared__ force smem_y_pos[thread_block_width];
-
-        __shared__ force smem_mass[thread_block_width];
-
-        int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
-        int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
+        unsigned int targetParticle = blockIdx.x * blockDim.x + threadIdx.x;
+        unsigned int forceEffectParticle = blockIdx.y * blockDim.y + threadIdx.y;
+        unsigned int gridSizeY = blockDim.y * gridDim.y;
 
         if (targetParticle < number_particles && forceEffectParticle < number_particles) {
             /*
@@ -152,10 +167,8 @@ namespace cadlabs {
             if (!threadIdx.y) {
                 smem_x_force[threadIdx.x] = 0;
                 smem_y_force[threadIdx.x] = 0;
-
                 smem_x_pos[threadIdx.x] = x_pos[targetParticle];
                 smem_y_pos[threadIdx.x] = y_pos[targetParticle];
-
                 smem_mass[threadIdx.x] = mass[targetParticle];
             }
 
@@ -165,20 +178,32 @@ namespace cadlabs {
              */
             __syncthreads();
 
-            double x_sep = x_pos[forceEffectParticle] - smem_x_pos[threadIdx.x];
-            double y_sep = y_pos[forceEffectParticle] - smem_y_pos[threadIdx.x];
-            double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
-            double grav_base = GRAV_CONSTANT * (mass[forceEffectParticle]) *
-                    (smem_mass[threadIdx.x]) / dist_sq;
+            float x_tot = 0.0, y_tot = 0.0;
+            int i = 0;
 
+            while(i < n) {
+                int a = forceEffectParticle < number_particles;
+                double x_sep = x_pos[forceEffectParticle] - smem_x_pos[threadIdx.x];
+                double y_sep = y_pos[forceEffectParticle] - smem_y_pos[threadIdx.x];
+
+                double dist_sq = MAX((x_sep * x_sep) + (y_sep * y_sep), 0.01);
+                double grav_base = GRAV_CONSTANT * (mass[forceEffectParticle]) *
+                                   (smem_mass[threadIdx.x]) / dist_sq;
+
+                x_tot += a * grav_base * x_sep;
+                y_tot += a * grav_base * y_sep;
+
+                forceEffectParticle += gridSizeY;
+                i++;
+            }
             /*
              * After computing the forces applied from one particle, these are added to the
              *  value on a local array.
              */
 
 #ifdef ATOMIC
-            atomicAdd(&(smem_x_force[threadIdx.x]), ((float)grav_base * x_sep));
-            atomicAdd(&(smem_y_force[threadIdx.x]), ((float)grav_base * y_sep));
+            atomicAdd(&(smem_x_force[threadIdx.x]), x_tot);
+            atomicAdd(&(smem_y_force[threadIdx.x]), y_tot);
 #endif
             __syncthreads();
 
@@ -213,20 +238,20 @@ namespace cadlabs {
             particles_soa.x_force[i] = 0;
             particles_soa.y_force[i] = 0;
         }
-
+        unsigned int temp = (number_blocks_height / n) + ((number_blocks_height % n) != 0);
         cudaMemcpy(gpu_particles_soa.x_pos, particles_soa.x_pos, count, cudaMemcpyHostToDevice);
         cudaMemcpy(gpu_particles_soa.y_pos, particles_soa.y_pos, count, cudaMemcpyHostToDevice);
 
         cudaMemcpy(gpu_particles_soa.x_force, particles_soa.x_force, f_count, cudaMemcpyHostToDevice);
         cudaMemcpy(gpu_particles_soa.y_force, particles_soa.y_force, f_count, cudaMemcpyHostToDevice);
 
-        dim3 grid(number_blocks_width, number_blocks_height);
+        dim3 grid(number_blocks_width, temp);
         dim3 block(thread_block_width, thread_block_height);
 
         two_cycles_parallel_soa<<<grid, block>>>(
                 gpu_particles_soa.x_pos, gpu_particles_soa.y_pos,
                 gpu_particles_soa.x_force, gpu_particles_soa.y_force,
-                gpu_particles_soa.mass, number_particles);
+                gpu_particles_soa.mass, number_particles, n);
 
         cudaMemcpy(particles_soa.x_force, gpu_particles_soa.x_force, f_count, cudaMemcpyDeviceToHost);
         cudaMemcpy(particles_soa.y_force, gpu_particles_soa.y_force, f_count, cudaMemcpyDeviceToHost);
@@ -249,10 +274,11 @@ namespace cadlabs {
             p->y_force = 0;
         }
 
+        unsigned int temp = (number_blocks_height / n) + ((number_blocks_height % n) != 0);
         cudaMemcpy(gpu_particles, particles, count, cudaMemcpyHostToDevice);
-        dim3 grid(number_blocks_width, number_blocks_height);
+        dim3 grid(number_blocks_width, temp);
         dim3 block(thread_block_width, thread_block_height);
-        two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles);
+        two_cycles_parallel<<<grid, block>>>(gpu_particles, number_particles, n);
         cudaMemcpy(particles, gpu_particles, count, cudaMemcpyDeviceToHost);
     }
 #endif

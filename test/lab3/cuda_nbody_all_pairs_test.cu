@@ -6,7 +6,10 @@
 #include <fstream>
 #include <algorithm>
 
-#include <nbody/cuda_nbody_all_pairs.h>
+// #include <nbody/cuda_nbody_all_pairs.h>
+// #include <nbody/cuda_nbody_gmem_no_cycles.h>
+// #include <nbody/cuda_nbody_smem_no_cycles.h>
+#include <nbody/cuda_nbody_first.h>
 
 /**
  * Compares the result produced and stored in stream result_stream with the log in file logfilename
@@ -42,7 +45,7 @@ TEST(NBody, CUDA_All_Pairs_P1000_T10_U0_T4) {
     auto number_of_threads = 2;
     std::string original_result_log = "p1000_t10_u0.log";
 
-    cadlabs::cuda_nbody_all_pairs nbody(nparticles, T_FINAL, number_of_threads, universe);
+    cadlabs::cuda_nbody_first nbody(nparticles, T_FINAL, number_of_threads, universe);
     nbody.run_simulation();
 
     std::stringstream ss;

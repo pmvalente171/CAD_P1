@@ -2,7 +2,7 @@
 #define CADLABS_GPU_DATA_TYPES_H
 
 // #define SOA
-#define ATOMIC
+// #define ATOMIC
 
 #ifdef ATOMIC
 typedef float force;
