@@ -1,7 +1,7 @@
 #ifndef CADLABS_GPU_DATA_TYPES_H
 #define CADLABS_GPU_DATA_TYPES_H
 
-// #define SOA
+#define SOA
 // #define ATOMIC
 
 #ifdef ATOMIC
